@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#003087">
+<title>Aphrodite Hills — Academy Attendance</title>
+<link rel="apple-touch-icon" href="assets/aphrodite-logo-mple.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Geologica:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ───────────────────────────────────────────────
+     APHRODITE HILLS BRAND TOKENS
+     Mple #003087 · Bronze #8E7A6B · neutrals Foam/Shell/Pearl
+     Display: IvyPresto Headline → Playfair Display fallback
+     Body/UI: Geologica
+     Rule honoured: blue and bronze never sit directly on each
+     other — they only ever appear on light (foam/shell) fields.
+  ─────────────────────────────────────────────── */
+  :root{
+    --mple:#003087;
+    --mple-soft:rgba(0,48,135,.10);
+    --mple-line:rgba(0,48,135,.22);
+    --bronze:#8E7A6B;
+    --pearl:#CFCDC9;
+    --shell:#D6D1C3;
+    --foam:#F9F6F4;
+    --ink:#4d4d4d;          /* 70% black, per type spec */
+    --ink-soft:#7a7a78;
+    --line:#E4E0D8;
+    --paid:#4f7a4e;         /* muted "paid" green (status colour) */
+    --paid-soft:rgba(79,122,78,.14);
+    --danger:#9a4434;
+    --display:"IvyPresto Headline","Playfair Display",Georgia,serif;
+    --ui:"Geologica","Segoe UI",system-ui,-apple-system,sans-serif;
+    --radius:10px;
+    --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 30px rgba(0,32,90,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:var(--ui);
+    color:var(--ink);
+    background:var(--foam);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.45;
+  }
+  .eyebrow{
+    font-family:var(--ui);
+    text-transform:uppercase;
+    letter-spacing:.16em;
+    font-size:11px;
+    font-weight:500;
+    color:var(--bronze);
+  }
+  button{font-family:var(--ui);cursor:pointer}
+  .hidden{display:none !important}
+
+  /* ── LOGIN ─────────────────────────────────────── */
+  #loginView{
+    min-height:100dvh;
+    display:flex;align-items:center;justify-content:center;
+    padding:24px;
+  }
+  .login-card{
+    width:100%;max-width:380px;
+    background:#fff;border:1px solid var(--line);
+    border-radius:16px;box-shadow:var(--shadow);
+    padding:38px 32px 34px;text-align:center;
+  }
+  .login-card img.logo{height:84px;width:auto;margin-bottom:22px}
+  .login-card h1{
+    font-family:var(--display);
+    color:var(--mple);
+    font-weight:500;
+    font-size:25px;
+    line-height:1.2;
+    margin:0 0 4px;
+  }
+  .login-card .sub{font-size:13px;color:var(--ink-soft);margin:0 0 26px}
+  .field{text-align:left;margin-bottom:14px}
+  .field label{display:block;font-size:12px;letter-spacing:.04em;color:var(--ink-soft);margin-bottom:6px}
+  .field input{
+    width:100%;padding:12px 13px;font-size:15px;font-family:var(--ui);
+    color:var(--ink);background:var(--foam);
+    border:1px solid var(--pearl);border-radius:var(--radius);
+    transition:border-color .15s,background .15s;
+  }
+  .field input:focus{outline:none;border-color:var(--mple);background:#fff}
+  .btn-primary{
+    width:100%;margin-top:8px;padding:13px;
+    background:var(--mple);color:var(--foam);
+    border:none;border-radius:var(--radius);
+    font-size:15px;font-weight:500;letter-spacing:.02em;
+    transition:opacity .15s,transform .05s;
+  }
+  .btn-primary:hover{opacity:.92}
+  .btn-primary:active{transform:translateY(1px)}
+  .btn-primary[disabled]{opacity:.5;cursor:default}
+  .login-error{
+    color:var(--danger);font-size:13px;margin-top:14px;min-height:18px;
+  }
+  .login-rule{height:1px;background:var(--line);margin:24px 0 0}
+  .login-foot{font-size:11px;color:var(--ink-soft);margin-top:16px;letter-spacing:.03em}
+
+  /* ── APP SHELL ─────────────────────────────────── */
+  #appView{min-height:100dvh;display:flex;flex-direction:column}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:12px;padding:12px 18px;
+    background:#fff;border-bottom:1px solid var(--line);
+    position:sticky;top:0;z-index:20;
+  }
+  .topbar .brand{display:flex;align-items:center;gap:10px;min-width:0}
+  .topbar .brand img{height:34px;width:auto}
+  .topbar .brand .wm{font-family:var(--display);color:var(--mple);font-size:17px;white-space:nowrap}
+  .topbar .who{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--ink-soft)}
+  .topbar .who b{color:var(--ink);font-weight:500}
+  .link-btn{background:none;border:none;color:var(--mple);font-size:13px;padding:6px 2px}
+  .link-btn:hover{text-decoration:underline}
+
+  .sheet{max-width:1180px;width:100%;margin:0 auto;padding:20px 18px 60px}
+
+  .head-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+  .title-block .eyebrow{margin-bottom:6px;display:block}
+  .title-block h2{
+    font-family:var(--display);color:var(--mple);font-weight:500;
+    font-size:30px;line-height:1.05;margin:0;
+  }
+  .title-block .meta{font-size:13px;color:var(--ink-soft);margin-top:4px}
+
+  /* academy switch */
+  .acad-switch{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 0}
+  .acad-chip{
+    padding:8px 14px;font-size:13px;border-radius:999px;
+    border:1px solid var(--mple-line);background:#fff;color:var(--mple);
+    transition:background .15s,color .15s;
+  }
+  .acad-chip[aria-pressed="true"]{background:var(--mple);color:var(--foam);border-color:var(--mple)}
+
+  /* controls bar */
+  .controls{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    margin:18px 0 14px;
+  }
+  .month-nav{display:flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px}
+  .month-nav button{
+    width:34px;height:34px;border-radius:50%;border:none;background:transparent;
+    color:var(--mple);font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;
+  }
+  .month-nav button:hover{background:var(--mple-soft)}
+  .month-nav .label{padding:0 10px;font-size:14px;font-weight:500;color:var(--ink);min-width:118px;text-align:center}
+  .spacer{flex:1}
+  .ghost-btn{
+    padding:9px 15px;font-size:13px;border-radius:var(--radius);
+    background:#fff;border:1px solid var(--mple-line);color:var(--mple);
+    display:inline-flex;align-items:center;gap:7px;transition:background .15s;
+  }
+  .ghost-btn:hover{background:var(--mple-soft)}
+  .ghost-btn[aria-pressed="true"]{background:var(--mple);color:var(--foam);border-color:var(--mple)}
+  .ghost-btn svg{width:15px;height:15px}
+
+  /* legend */
+  .legend{display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--ink-soft);margin:0 0 12px}
+  .legend .item{display:flex;align-items:center;gap:7px}
+  .swatch{width:20px;height:20px;border-radius:6px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
+  .swatch.present{background:var(--mple-soft);border-color:var(--mple-line)}
+  .swatch.paid{background:var(--paid);border-color:var(--paid)}
+  .swatch svg{width:13px;height:13px}
+
+  /* ── GRID ──────────────────────────────────────── */
+  .grid-wrap{
+    background:#fff;border:1px solid var(--line);border-radius:14px;
+    overflow:auto;max-height:72dvh;box-shadow:var(--shadow);
+    -webkit-overflow-scrolling:touch;
+  }
+  table.grid{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%}
+  table.grid th,table.grid td{border-bottom:1px solid var(--line)}
+
+  /* header row */
+  table.grid thead th{
+    position:sticky;top:0;z-index:2;background:#fff;
+    padding:9px 6px;font-weight:500;color:var(--ink);
+    border-bottom:1.5px solid var(--shell);
+  }
+  thead th.col-date{min-width:50px;text-align:center}
+  thead th.col-date .dow{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+  thead th.col-date .dom{display:block;font-size:15px;line-height:1.1}
+  thead th.col-date.is-today .dom{color:var(--mple);font-weight:600}
+  thead th.col-date.is-today{box-shadow:inset 0 -3px 0 var(--bronze)}
+  thead th.col-date.is-extra .dow{color:var(--bronze)}
+
+  /* name column (sticky-left corner + cells) */
+  th.col-name,td.col-name{
+    position:sticky;left:0;z-index:1;background:#fff;
+    text-align:left;min-width:172px;max-width:210px;
+    padding:8px 12px 8px 14px;
+  }
+  thead th.col-name{z-index:3;border-bottom:1.5px solid var(--shell)}
+  td.col-name{border-right:1px solid var(--line)}
+  .grid-wrap.scrolled td.col-name,.grid-wrap.scrolled th.col-name{box-shadow:6px 0 12px -8px rgba(0,32,90,.18)}
+  td.col-name .idx{color:var(--ink-soft);font-size:11px;margin-right:8px;display:inline-block;min-width:16px}
+  td.col-name .nm{font-size:14px;color:var(--ink)}
+  td.col-name .gp{display:inline-block;margin-left:6px;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--bronze);vertical-align:middle}
+  tbody tr:nth-child(even) td.col-name,tbody tr:nth-child(even) td.cell{background:#FCFBF9}
+
+  /* attendance cells */
+  td.cell{padding:0;text-align:center}
+  td.cell button{
+    width:100%;min-width:50px;height:42px;border:none;background:transparent;
+    display:flex;align-items:center;justify-content:center;
+    border-left:1px solid var(--line);
+    transition:background .12s;
+  }
+  td.cell button:hover{background:var(--mple-soft)}
+  td.cell button .mark{width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+  td.cell button[data-state="1"] .mark{background:var(--mple-soft)}
+  td.cell button[data-state="1"] .mark svg{stroke:var(--mple)}
+  td.cell button[data-state="2"] .mark{background:var(--paid)}
+  td.cell button[data-state="2"] .mark svg{stroke:#fff}
+  td.cell button svg{width:15px;height:15px;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+
+  /* remove handle (manage mode) */
+  .rm{
+    display:none;width:22px;height:22px;border-radius:50%;
+    border:1px solid var(--danger);color:var(--danger);background:#fff;
+    font-size:13px;line-height:1;margin-right:8px;vertical-align:middle;
+    align-items:center;justify-content:center;
+  }
+  body.managing .rm{display:inline-flex}
+  body.managing td.col-name .idx{display:none}
+
+  /* add-child row */
+  .add-row td{background:var(--foam);padding:12px 14px}
+  .add-form{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .add-form input{
+    padding:9px 11px;font-size:14px;font-family:var(--ui);
+    border:1px solid var(--pearl);border-radius:8px;background:#fff;color:var(--ink);
+  }
+  .add-form input.f-first{width:150px}
+  .add-form input.f-sur{width:160px}
+  .add-form input.f-grp{width:96px}
+  .add-form .mini{padding:9px 14px;font-size:13px;border-radius:8px;border:none;background:var(--mple);color:var(--foam)}
+  .add-form .mini.cancel{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
+
+  .empty-state{padding:40px 20px;text-align:center;color:var(--ink-soft);font-size:14px}
+
+  /* toast */
+  #toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:var(--mple);color:var(--foam);font-size:13px;
+    padding:10px 18px;border-radius:999px;box-shadow:0 8px 24px rgba(0,32,90,.25);
+    opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:60;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast.err{background:var(--danger)}
+
+  /* loading veil */
+  .veil{position:absolute;inset:0;background:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center;z-index:5}
+  .veil .spin{width:26px;height:26px;border:3px solid var(--mple-soft);border-top-color:var(--mple);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  @media (max-width:560px){
+    .title-block h2{font-size:24px}
+    .topbar .brand .wm{display:none}
+    th.col-name,td.col-name{min-width:140px}
+    .who .role{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+</style>
+</head>
+<body>
+
+<!-- ───────── LOGIN ───────── -->
+<section id="loginView">
+  <div class="login-card">
+    <img class="logo" src="assets/aphrodite-logo-mple.png" alt="Aphrodite Hills">
+    <h1>Academy Attendance</h1>
+    <p class="sub">Sign in to your register</p>
+    <div class="field">
+      <label for="u">Username</label>
+      <input id="u" type="text" autocomplete="username" autocapitalize="none" spellcheck="false">
+    </div>
+    <div class="field">
+      <label for="p">Password</label>
+      <input id="p" type="password" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" id="loginBtn">Sign in</button>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-rule"></div>
+    <div class="login-foot">Aphrodite Hills Racket &amp; Sports Academies</div>
+  </div>
+</section>
+
+<!-- ───────── APP ───────── -->
+<section id="appView" class="hidden">
+  <div class="topbar">
+    <div class="brand">
+      <img src="assets/aphrodite-logo-mple.png" alt="">
+      <span class="wm">Aphrodite Hills</span>
+    </div>
+    <div class="who">
+      <span><b id="coachName">—</b> <span class="role" id="coachRole"></span></span>
+      <button class="link-btn" id="signOut">Sign out</button>
+    </div>
+  </div>
+
+  <div class="sheet">
+    <div class="head-row">
+      <div class="title-block">
+        <span class="eyebrow">Attendance register</span>
+        <h2 id="acadTitle">—</h2>
+        <div class="meta" id="acadInfo"></div>
+      </div>
+    </div>
+
+    <div class="acad-switch" id="acadSwitch"></div>
+
+    <div class="controls">
+      <div class="month-nav">
+        <button id="prevMonth" aria-label="Previous month">‹</button>
+        <span class="label" id="monthLabel">—</span>
+        <button id="nextMonth" aria-label="Next month">›</button>
+      </div>
+      <div class="spacer"></div>
+      <button class="ghost-btn" id="addSessionBtn" title="Add a one-off session date">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Session
+      </button>
+      <button class="ghost-btn" id="addChildBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Add child
+      </button>
+      <button class="ghost-btn" id="manageBtn" aria-pressed="false">Manage roster</button>
+    </div>
+
+    <div class="legend">
+      <div class="item"><span class="swatch"></span> Absent</div>
+      <div class="item"><span class="swatch present"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span> Present</div>
+      <div class="item"><span class="swatch paid"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span> Present &amp; paid</div>
+      <div class="item" style="color:var(--ink-soft)">Tap a cell to cycle</div>
+    </div>
+
+    <div class="grid-wrap" id="gridWrap" style="position:relative">
+      <div class="veil" id="gridVeil"><div class="spin"></div></div>
+      <table class="grid" id="grid"></table>
+    </div>
+  </div>
+</section>
+
+<div id="toast"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL BETWEEN THE QUOTES.
+   It must end in /exec  (see SETUP_GUIDE.md, step 4).
+   ════════════════════════════════════════════════════════════ */
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwCeJlNee-5dUmFVdmdi6qxQS3VrnHu_x5DoLGxz7I-Lu717L9DdICDedDgFMUxprAKyA/exec";
+
+/* ---------- tiny helpers ---------- */
+const $ = (id) => document.getElementById(id);
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>';
+
+let state = {
+  token: null,
+  displayName: "",
+  academies: [],       // [{key,name,weekdays,info}]
+  academy: null,       // current academy object
+  month: null,         // {y, m}  (m is 0-based)
+  data: null
+};
+
+function toast(msg, isErr){
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "show" + (isErr ? " err" : "");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=> t.className = "", 1900);
+}
+
+async function api(payload){
+  if (SCRIPT_URL.indexOf("PASTE_YOUR") === 0){
+    throw new Error("SCRIPT_URL not set in index.html");
+  }
+  const res = await fetch(SCRIPT_URL, {
+    method:"POST",
+    headers:{ "Content-Type":"text/plain;charset=utf-8" }, // avoids CORS preflight
+    body: JSON.stringify(payload)
+  });
+  return res.json();
+}
+
+/* ---------- session persistence ---------- */
+function saveSession(){
+  sessionStorage.setItem("ah_att", JSON.stringify({
+    token: state.token, displayName: state.displayName, academies: state.academies
+  }));
+}
+function loadSession(){
+  try{
+    const s = JSON.parse(sessionStorage.getItem("ah_att"));
+    if (s && s.token){ state.token = s.token; state.displayName = s.displayName; state.academies = s.academies; return true; }
+  }catch(e){}
+  return false;
+}
+function clearSession(){ sessionStorage.removeItem("ah_att"); }
+
+/* ---------- login ---------- */
+async function doLogin(){
+  const u = $("u").value.trim(), p = $("p").value;
+  $("loginError").textContent = "";
+  if (!u || !p){ $("loginError").textContent = "Enter your username and password."; return; }
+  $("loginBtn").disabled = true; $("loginBtn").textContent = "Signing in…";
+  try{
+    const r = await api({ action:"login", username:u, password:p });
+    if (!r.ok){
+      $("loginError").textContent = r.error === "invalid_credentials"
+        ? "That username or password isn't right." : "Couldn't sign in. Try again.";
+      return;
+    }
+    state.token = r.token; state.displayName = r.displayName; state.academies = r.academies || [];
+    saveSession();
+    enterApp();
+  }catch(err){
+    $("loginError").textContent = "Connection problem. Check you're online and try again.";
+    console.error(err);
+  }finally{
+    $("loginBtn").disabled = false; $("loginBtn").textContent = "Sign in";
+  }
+}
+
+/* ---------- app boot ---------- */
+function enterApp(){
+  $("loginView").classList.add("hidden");
+  $("appView").classList.remove("hidden");
+  $("coachName").textContent = state.displayName || "Coach";
+  $("coachRole").textContent = state.academies.length === 1 ? "· " + state.academies[0].name : "· " + state.academies.length + " academies";
+
+  const now = new Date();
+  state.month = { y: now.getFullYear(), m: now.getMonth() };
+  state.academy = state.academies[0] || null;
+
+  renderAcademySwitch();
+  loadAndRender();
+}
+
+function signOut(){
+  clearSession();
+  state = { token:null, displayName:"", academies:[], academy:null, month:null, data:null };
+  $("appView").classList.add("hidden");
+  $("loginView").classList.remove("hidden");
+  $("p").value = "";
+  document.body.classList.remove("managing");
+}
+
+/* ---------- academy switcher ---------- */
+function renderAcademySwitch(){
+  const wrap = $("acadSwitch");
+  if (state.academies.length <= 1){ wrap.innerHTML = ""; return; }
+  wrap.innerHTML = "";
+  state.academies.forEach(a=>{
+    const b = document.createElement("button");
+    b.className = "acad-chip";
+    b.textContent = a.name;
+    b.setAttribute("aria-pressed", a.key === state.academy.key ? "true" : "false");
+    b.onclick = ()=>{
+      if (state.academy.key === a.key) return;
+      state.academy = a;
+      renderAcademySwitch();
+      loadAndRender();
+    };
+    wrap.appendChild(b);
+  });
+}
+
+/* ---------- month nav ---------- */
+function shiftMonth(delta){
+  let m = state.month.m + delta, y = state.month.y;
+  if (m < 0){ m = 11; y--; } if (m > 11){ m = 0; y++; }
+  state.month = { y, m };
+  loadAndRender();
+}
+function monthKey(){ return state.month.y + "-" + String(state.month.m + 1).padStart(2,"0"); }
+function dateKey(day){ return monthKey() + "-" + String(day).padStart(2,"0"); }
+
+/* ---------- compute session dates for the month ---------- */
+function sessionDates(){
+  const { y, m } = state.month;
+  const wk = state.academy.weekdays || [];
+  const days = new Date(y, m+1, 0).getDate();
+  const set = new Map(); // day -> {extra:bool}
+  for (let d=1; d<=days; d++){
+    const dow = new Date(y, m, d).getDay();
+    if (wk.indexOf(dow) !== -1) set.set(d, { extra:false });
+  }
+  // merge one-off sessions returned by the server
+  (state.data?.extraSessions || []).forEach(ds=>{
+    const d = parseInt(ds.slice(-2),10);
+    if (!isNaN(d)) set.set(d, { extra: !set.has(d) ? true : set.get(d).extra });
+  });
+  return [...set.keys()].sort((a,b)=>a-b).map(d=>({ day:d, extra:set.get(d).extra }));
+}
+
+/* ---------- load + render ---------- */
+async function loadAndRender(){
+  $("acadTitle").textContent = state.academy ? state.academy.name : "—";
+  $("acadInfo").textContent  = state.academy && state.academy.info ? "Runs " + state.academy.info : "";
+  $("monthLabel").textContent = MONTHS[state.month.m] + " " + state.month.y;
+  $("gridVeil").style.display = "flex";
+  try{
+    const r = await api({ action:"getData", token:state.token, academy:state.academy.key, month:monthKey() });
+    if (r.error === "session_expired"){ toast("Session expired — sign in again", true); signOut(); return; }
+    if (!r.ok){ toast("Couldn't load the register", true); return; }
+    state.data = r;
+    renderGrid();
+  }catch(err){
+    toast("Connection problem", true); console.error(err);
+  }finally{
+    $("gridVeil").style.display = "none";
+  }
+}
+
+function renderGrid(){
+  const grid = $("grid");
+  const dates = sessionDates();
+  const kids = state.data.children || [];
+  const att = state.data.attendance || {};
+  const todayK = (()=>{ const n=new Date(); return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0"); })();
+
+  // header
+  let html = "<thead><tr><th class='col-name'>Name</th>";
+  dates.forEach(({day,extra})=>{
+    const k = dateKey(day);
+    const dow = DOW[new Date(state.month.y, state.month.m, day).getDay()];
+    const cls = "col-date" + (k===todayK ? " is-today":"") + (extra ? " is-extra":"");
+    html += `<th class='${cls}'><span class='dow'>${dow}</span><span class='dom'>${day}</span></th>`;
+  });
+  html += "</tr></thead><tbody>";
+
+  if (!kids.length){
+    html += `<tr><td class='col-name'></td><td colspan='${Math.max(dates.length,1)}'><div class='empty-state'>No children yet. Use “Add child” to build the list.</div></td></tr>`;
+  }
+
+  kids.forEach((kid,i)=>{
+    const nm = ((kid.first||"")+" "+(kid.surname||"")).trim();
+    const grp = kid.group ? `<span class='gp'>${escapeHtml(kid.group)}</span>` : "";
+    html += "<tr data-child='"+kid.id+"'>";
+    html += `<td class='col-name'>`
+          + `<button class='rm' title='Remove' data-rm='${kid.id}' data-nm="${escapeAttr(nm)}">×</button>`
+          + `<span class='idx'>${i+1}</span><span class='nm'>${escapeHtml(nm)}</span>${grp}</td>`;
+    dates.forEach(({day})=>{
+      const k = kid.id + "|" + dateKey(day);
+      const rec = att[k] || { present:false, paid:false };
+      const st = rec.paid ? 2 : (rec.present ? 1 : 0);
+      html += `<td class='cell'><button data-child='${kid.id}' data-date='${dateKey(day)}' data-state='${st}'><span class='mark'>${st? CHECK : ""}</span></button></td>`;
+    });
+    html += "</tr>";
+  });
+
+  // add-child inline form (hidden until toggled)
+  html += `<tr class='add-row hidden' id='addRow'><td class='col-name'></td>
+    <td colspan='${Math.max(dates.length,1)}'>
+      <div class='add-form'>
+        <input class='f-first' id='nf' placeholder='First name'>
+        <input class='f-sur' id='ns' placeholder='Surname'>
+        <input class='f-grp' id='ng' placeholder='Group (opt)'>
+        <button class='mini' id='nAdd'>Add</button>
+        <button class='mini cancel' id='nCancel'>Cancel</button>
+      </div>
+    </td></tr>`;
+
+  html += "</tbody>";
+  grid.innerHTML = html;
+
+  // wire cell taps
+  grid.querySelectorAll("td.cell button").forEach(btn=> btn.onclick = ()=> cycleCell(btn));
+  // wire remove handles
+  grid.querySelectorAll(".rm").forEach(b=> b.onclick = ()=> removeChild(b.dataset.rm, b.dataset.nm));
+  // wire add-form
+  $("nAdd").onclick = addChild;
+  $("nCancel").onclick = ()=>{ $("addRow").classList.add("hidden"); };
+  $("ns").addEventListener("keydown", e=>{ if(e.key==="Enter") addChild(); });
+}
+
+/* ---------- cell cycle: absent → present → paid → absent ---------- */
+async function cycleCell(btn){
+  const cur = parseInt(btn.dataset.state,10);
+  const next = (cur + 1) % 3;
+  const present = next >= 1, paid = next === 2;
+  // optimistic update
+  btn.dataset.state = next;
+  btn.querySelector(".mark").innerHTML = next ? CHECK : "";
+  try{
+    const r = await api({ action:"setAttendance", token:state.token, academy:state.academy.key,
+      childId:btn.dataset.child, date:btn.dataset.date, present, paid });
+    if (r.error === "session_expired"){ toast("Session expired — sign in again", true); signOut(); return; }
+    if (!r.ok) throw new Error(r.error||"failed");
+  }catch(err){
+    // revert
+    btn.dataset.state = cur;
+    btn.querySelector(".mark").innerHTML = cur ? CHECK : "";
+    toast("Didn't save — try again", true);
+    console.error(err);
+  }
+}
+
+/* ---------- add / remove child ---------- */
+function openAddChild(){
+  const row = $("addRow"); if (!row) return;
+  row.classList.remove("hidden");
+  $("nf").focus();
+  row.scrollIntoView({ block:"nearest", behavior:"smooth" });
+}
+async function addChild(){
+  const first = $("nf").value.trim(), surname = $("ns").value.trim(), group = $("ng").value.trim();
+  if (!first && !surname){ toast("Add a name first", true); $("nf").focus(); return; }
+  try{
+    const r = await api({ action:"addChild", token:state.token, academy:state.academy.key, first, surname, group });
+    if (r.error === "session_expired"){ signOut(); return; }
+    if (!r.ok) throw new Error(r.error);
+    toast("Added " + (first||surname));
+    await loadAndRender();
+  }catch(err){ toast("Couldn't add — try again", true); console.error(err); }
+}
+async function removeChild(id, nm){
+  if (!confirm("Remove " + (nm||"this child") + " from the list?\n\nPast attendance stays recorded.")) return;
+  try{
+    const r = await api({ action:"removeChild", token:state.token, childId:id });
+    if (r.error === "session_expired"){ signOut(); return; }
+    if (!r.ok) throw new Error(r.error);
+    toast("Removed");
+    await loadAndRender();
+  }catch(err){ toast("Couldn't remove — try again", true); console.error(err); }
+}
+
+/* ---------- add one-off session ---------- */
+async function addSession(){
+  const def = monthKey() + "-15";
+  const input = prompt("Add a one-off session date for " + MONTHS[state.month.m] + " " + state.month.y +
+    ".\n\nEnter the day of the month (1–31):", "");
+  if (input === null) return;
+  const day = parseInt(input,10);
+  const maxDay = new Date(state.month.y, state.month.m+1, 0).getDate();
+  if (isNaN(day) || day < 1 || day > maxDay){ toast("Enter a day between 1 and " + maxDay, true); return; }
+  try{
+    const r = await api({ action:"addSession", token:state.token, academy:state.academy.key, date:dateKey(day) });
+    if (r.error === "session_expired"){ signOut(); return; }
+    if (!r.ok) throw new Error(r.error);
+    toast("Session added");
+    await loadAndRender();
+  }catch(err){ toast("Couldn't add session", true); console.error(err); }
+}
+
+/* ---------- manage mode ---------- */
+function toggleManage(){
+  const on = document.body.classList.toggle("managing");
+  $("manageBtn").setAttribute("aria-pressed", on ? "true":"false");
+  $("manageBtn").textContent = on ? "Done" : "Manage roster";
+}
+
+/* ---------- misc ---------- */
+function escapeHtml(s){ return String(s).replace(/[&<>]/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c])); }
+function escapeAttr(s){ return String(s).replace(/"/g,"&quot;"); }
+
+/* scroll shadow on name column */
+$("gridWrap").addEventListener("scroll", function(){
+  this.classList.toggle("scrolled", this.scrollLeft > 2);
+});
+
+/* ---------- wire static controls ---------- */
+$("loginBtn").onclick = doLogin;
+$("p").addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
+$("u").addEventListener("keydown", e=>{ if(e.key==="Enter") $("p").focus(); });
+$("signOut").onclick = signOut;
+$("prevMonth").onclick = ()=> shiftMonth(-1);
+$("nextMonth").onclick = ()=> shiftMonth(1);
+$("addChildBtn").onclick = openAddChild;
+$("addSessionBtn").onclick = addSession;
+$("manageBtn").onclick = toggleManage;
+
+/* ---------- start ---------- */
+if (loadSession()) enterApp();
+</script>
+</body>
+</html>
