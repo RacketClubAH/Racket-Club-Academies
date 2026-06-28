@@ -151,6 +151,8 @@
   }
   .month-nav button:hover{background:var(--mple-soft)}
   .month-nav .label{padding:0 10px;font-size:14px;font-weight:500;color:var(--ink);min-width:118px;text-align:center}
+  .synced{font-size:12px;color:var(--ink-soft);white-space:nowrap;margin-left:2px;align-self:center}
+  .synced.flash{color:var(--mple)}
   .spacer{flex:1}
   .ghost-btn{
     padding:9px 15px;font-size:13px;border-radius:var(--radius);
@@ -333,6 +335,11 @@
         Add child
       </button>
       <button class="ghost-btn" id="manageBtn" aria-pressed="false">Manage roster</button>
+      <button class="ghost-btn" id="refreshBtn" title="Refresh the register now">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+        Refresh
+      </button>
+      <span class="synced" id="syncedLabel"></span>
     </div>
 
     <div class="legend">
@@ -356,8 +363,7 @@
    PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL BETWEEN THE QUOTES.
    It must end in /exec  (see SETUP_GUIDE.md, step 4).
    ════════════════════════════════════════════════════════════ */
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwCeJlNee-5dUmFVdmdi6qxQS3VrnHu_x5DoLGxz7I-Lu717L9DdICDedDgFMUxprAKyA/exec";
-
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQbC7WkO-9mHCOkwZjX090E0rDZjGKPLtquq54mQ2VBULeq39Lr8pA_tM8EgaOMnt7Fg/exec
 /* ---------- tiny helpers ---------- */
 const $ = (id) => document.getElementById(id);
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -370,8 +376,11 @@ let state = {
   academies: [],       // [{key,name,weekdays,info}]
   academy: null,       // current academy object
   month: null,         // {y, m}  (m is 0-based)
-  data: null
+  data: null,
+  saving: 0,           // in-flight saves; auto-refresh pauses while > 0
+  lastSync: null
 };
+let refreshTimer = null;
 
 function toast(msg, isErr){
   const t = $("toast");
@@ -445,11 +454,12 @@ function enterApp(){
 
   renderAcademySwitch();
   loadAndRender();
+  startAutoRefresh();
 }
 
 function signOut(){
   clearSession();
-  state = { token:null, displayName:"", academies:[], academy:null, month:null, data:null };
+  state = { token:null, displayName:"", academies:[], academy:null, month:null, data:null, saving:0, lastSync:null };
   $("appView").classList.add("hidden");
   $("loginView").classList.remove("hidden");
   $("p").value = "";
@@ -505,22 +515,48 @@ function sessionDates(){
 }
 
 /* ---------- load + render ---------- */
-async function loadAndRender(){
+async function loadAndRender(silent){
   $("acadTitle").textContent = state.academy ? state.academy.name : "—";
   $("acadInfo").textContent  = state.academy && state.academy.info ? "Runs " + state.academy.info : "";
   $("monthLabel").textContent = MONTHS[state.month.m] + " " + state.month.y;
-  $("gridVeil").style.display = "flex";
+  if (!silent) $("gridVeil").style.display = "flex";
   try{
     const r = await api({ action:"getData", token:state.token, academy:state.academy.key, month:monthKey() });
     if (r.error === "session_expired"){ toast("Session expired — sign in again", true); signOut(); return; }
-    if (!r.ok){ toast("Couldn't load the register", true); return; }
+    if (!r.ok){ if(!silent) toast("Couldn't load the register", true); return; }
     state.data = r;
+    state.lastSync = new Date();
     renderGrid();
+    updateSynced();
   }catch(err){
-    toast("Connection problem", true); console.error(err);
+    if(!silent) toast("Connection problem", true); console.error(err);
   }finally{
-    $("gridVeil").style.display = "none";
+    if (!silent) $("gridVeil").style.display = "none";
   }
+}
+
+function updateSynced(){
+  const el = $("syncedLabel"); if (!el || !state.lastSync) return;
+  const hh = String(state.lastSync.getHours()).padStart(2,"0");
+  const mm = String(state.lastSync.getMinutes()).padStart(2,"0");
+  el.textContent = "Synced " + hh + ":" + mm;
+  el.classList.add("flash");
+  clearTimeout(updateSynced._t);
+  updateSynced._t = setTimeout(()=> el.classList.remove("flash"), 600);
+}
+
+/* ---------- live refresh: keep the board current for everyone ---------- */
+function silentRefresh(){
+  if (document.hidden) return;          // don't poll a backgrounded tab
+  if (state.saving > 0) return;         // don't fight an in-flight save
+  if (!state.token || !state.academy) return;
+  if (document.body.classList.contains("managing")) return; // not mid roster edit
+  if ($("addRow") && !$("addRow").classList.contains("hidden")) return; // not mid add
+  loadAndRender(true);
+}
+function startAutoRefresh(){
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(silentRefresh, 30000);  // every 30s
 }
 
 function renderGrid(){
@@ -593,6 +629,7 @@ async function cycleCell(btn){
   // optimistic update
   btn.dataset.state = next;
   btn.querySelector(".mark").innerHTML = next ? CHECK : "";
+  state.saving++;
   try{
     const r = await api({ action:"setAttendance", token:state.token, academy:state.academy.key,
       childId:btn.dataset.child, date:btn.dataset.date, present, paid });
@@ -604,6 +641,8 @@ async function cycleCell(btn){
     btn.querySelector(".mark").innerHTML = cur ? CHECK : "";
     toast("Didn't save — try again", true);
     console.error(err);
+  }finally{
+    state.saving = Math.max(0, state.saving - 1);
   }
 }
 
@@ -680,6 +719,9 @@ $("nextMonth").onclick = ()=> shiftMonth(1);
 $("addChildBtn").onclick = openAddChild;
 $("addSessionBtn").onclick = addSession;
 $("manageBtn").onclick = toggleManage;
+$("refreshBtn").onclick = ()=> loadAndRender();
+// when the coach switches back to this tab, pull the latest immediately
+document.addEventListener("visibilitychange", ()=>{ if (!document.hidden) silentRefresh(); });
 
 /* ---------- start ---------- */
 if (loadSession()) enterApp();
