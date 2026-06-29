@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#003087">
-<title>Aphrodite Hills - Academy Attendance</title>
+<title>Aphrodite Hills — Academy Attendance</title>
 <link rel="apple-touch-icon" href="assets/aphrodite-logo-mple.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -346,7 +346,7 @@
       <div class="item"><span class="swatch"></span> Absent</div>
       <div class="item"><span class="swatch present"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span> Present</div>
       <div class="item"><span class="swatch paid"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span> Present &amp; paid</div>
-      <div class="item" style="color:var(--ink-soft)">Tap a cell to cycle</div>
+      <div class="item" id="cellHint" style="color:var(--ink-soft)">Tap a cell to cycle</div>
     </div>
 
     <div class="grid-wrap" id="gridWrap" style="position:relative">
@@ -363,7 +363,8 @@
    PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL BETWEEN THE QUOTES.
    It must end in /exec  (see SETUP_GUIDE.md, step 4).
    ════════════════════════════════════════════════════════════ */
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzQbC7WkO-9mHCOkwZjX090E0rDZjGKPLtquq54mQ2VBULeq39Lr8pA_tM8EgaOMnt7Fg/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyEDLtcJ7vK3gptLz-TCGH4IFY_WwXOYVTTbbmNHsQ2aPGx0ckD_TpgW4yeVN73k_0f/exec";
+
 /* ---------- tiny helpers ---------- */
 const $ = (id) => document.getElementById(id);
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -378,7 +379,8 @@ let state = {
   month: null,         // {y, m}  (m is 0-based)
   data: null,
   saving: 0,           // in-flight saves; auto-refresh pauses while > 0
-  lastSync: null
+  lastSync: null,
+  isAdmin: false       // reception accounts; only they can set the paid flag
 };
 let refreshTimer = null;
 
@@ -405,13 +407,13 @@ async function api(payload){
 /* ---------- session persistence ---------- */
 function saveSession(){
   sessionStorage.setItem("ah_att", JSON.stringify({
-    token: state.token, displayName: state.displayName, academies: state.academies
+    token: state.token, displayName: state.displayName, academies: state.academies, isAdmin: state.isAdmin
   }));
 }
 function loadSession(){
   try{
     const s = JSON.parse(sessionStorage.getItem("ah_att"));
-    if (s && s.token){ state.token = s.token; state.displayName = s.displayName; state.academies = s.academies; return true; }
+    if (s && s.token){ state.token = s.token; state.displayName = s.displayName; state.academies = s.academies; state.isAdmin = !!s.isAdmin; return true; }
   }catch(e){}
   return false;
 }
@@ -431,10 +433,13 @@ async function doLogin(){
       return;
     }
     state.token = r.token; state.displayName = r.displayName; state.academies = r.academies || [];
+    state.isAdmin = !!r.admin;
     saveSession();
     enterApp();
   }catch(err){
-    $("loginError").textContent = "Connection problem. Check you're online and try again.";
+    $("loginError").textContent = (err && err.message && err.message.indexOf("SCRIPT_URL") >= 0)
+      ? "This page isn't connected to the backend yet. Paste your web app /exec URL into the SCRIPT_URL line in index.html."
+      : "Connection problem. Check the page is connected and you're online, then try again.";
     console.error(err);
   }finally{
     $("loginBtn").disabled = false; $("loginBtn").textContent = "Sign in";
@@ -446,7 +451,10 @@ function enterApp(){
   $("loginView").classList.add("hidden");
   $("appView").classList.remove("hidden");
   $("coachName").textContent = state.displayName || "Coach";
-  $("coachRole").textContent = state.academies.length === 1 ? "· " + state.academies[0].name : "· " + state.academies.length + " academies";
+  $("coachRole").textContent = state.isAdmin
+    ? "· Reception"
+    : (state.academies.length === 1 ? "· " + state.academies[0].name : "· " + state.academies.length + " academies");
+  $("cellHint").textContent = state.isAdmin ? "Tap a cell to cycle" : "Paid (green) is set by reception";
 
   const now = new Date();
   state.month = { y: now.getFullYear(), m: now.getMonth() };
@@ -459,7 +467,7 @@ function enterApp(){
 
 function signOut(){
   clearSession();
-  state = { token:null, displayName:"", academies:[], academy:null, month:null, data:null, saving:0, lastSync:null };
+  state = { token:null, displayName:"", academies:[], academy:null, month:null, data:null, saving:0, lastSync:null, isAdmin:false };
   $("appView").classList.add("hidden");
   $("loginView").classList.remove("hidden");
   $("p").value = "";
@@ -624,8 +632,22 @@ function renderGrid(){
 /* ---------- cell cycle: absent → present → paid → absent ---------- */
 async function cycleCell(btn){
   const cur = parseInt(btn.dataset.state,10);
-  const next = (cur + 1) % 3;
-  const present = next >= 1, paid = next === 2;
+
+  // Next state depends on role.
+  let next, paid;
+  if (state.isAdmin){
+    next = (cur + 1) % 3;          // absent -> present -> paid -> absent
+    paid = next === 2;
+  } else {
+    if (cur === 2){                // green is reception-only; coaches can't touch it
+      toast("Only reception can change paid");
+      return;
+    }
+    next = cur === 0 ? 1 : 0;      // absent <-> present
+    paid = false;
+  }
+  const present = next >= 1;
+
   // optimistic update
   btn.dataset.state = next;
   btn.querySelector(".mark").innerHTML = next ? CHECK : "";
@@ -635,6 +657,14 @@ async function cycleCell(btn){
       childId:btn.dataset.child, date:btn.dataset.date, present, paid });
     if (r.error === "session_expired"){ toast("Session expired — sign in again", true); signOut(); return; }
     if (!r.ok) throw new Error(r.error||"failed");
+    // trust the server's paid value (it enforces the reception-only rule)
+    if (typeof r.paid === "boolean"){
+      const real = r.paid ? 2 : (present ? 1 : 0);
+      if (real !== parseInt(btn.dataset.state,10)){
+        btn.dataset.state = real;
+        btn.querySelector(".mark").innerHTML = real ? CHECK : "";
+      }
+    }
   }catch(err){
     // revert
     btn.dataset.state = cur;
