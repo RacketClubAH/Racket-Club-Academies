@@ -223,6 +223,11 @@
   td.cell button[data-state="2"] .mark svg{stroke:#fff}
   td.cell button svg{width:15px;height:15px;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
 
+  /* football two-hour sessions: two ticks (hour 1 / hour 2) in one date cell */
+  td.cell.multi .pair{display:flex}
+  td.cell.multi .pair button{flex:1 1 0;min-width:33px;width:auto}
+  thead th.col-date .hrs{display:flex;justify-content:space-around;font-size:9px;color:var(--ink-soft);margin-top:2px;padding:0 3px}
+
   /* remove handle (manage mode) */
   .rm{
     display:none;width:22px;height:22px;border-radius:50%;
@@ -363,7 +368,7 @@
    PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL BETWEEN THE QUOTES.
    It must end in /exec  (see SETUP_GUIDE.md, step 4).
    ════════════════════════════════════════════════════════════ */
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyEDLtcJ7vK3gptLz-TCGH4IFY_WwXOYVTTbbmNHsQ2aPGx0ckD_TpgW4yeVN73k_0f/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyctEYf4bXMq2q1gKvDg6KJP89AFIyetKqMLl37jefNw4Z5miiF0wa1UfUqrmNj_lM8Qg/exec";
 
 /* ---------- tiny helpers ---------- */
 const $ = (id) => document.getElementById(id);
@@ -570,6 +575,7 @@ function startAutoRefresh(){
 function renderGrid(){
   const grid = $("grid");
   const dates = sessionDates();
+  const slots = state.academy.slots || 1;
   const kids = state.data.children || [];
   const att = state.data.attendance || {};
   const todayK = (()=>{ const n=new Date(); return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0"); })();
@@ -580,7 +586,8 @@ function renderGrid(){
     const k = dateKey(day);
     const dow = DOW[new Date(state.month.y, state.month.m, day).getDay()];
     const cls = "col-date" + (k===todayK ? " is-today":"") + (extra ? " is-extra":"");
-    html += `<th class='${cls}'><span class='dow'>${dow}</span><span class='dom'>${day}</span></th>`;
+    const hrs = slots>1 ? `<span class='hrs'><span>1</span><span>2</span></span>` : "";
+    html += `<th class='${cls}'><span class='dow'>${dow}</span><span class='dom'>${day}</span>${hrs}</th>`;
   });
   html += "</tr></thead><tbody>";
 
@@ -596,10 +603,22 @@ function renderGrid(){
           + `<button class='rm' title='Remove' data-rm='${kid.id}' data-nm="${escapeAttr(nm)}">×</button>`
           + `<span class='idx'>${i+1}</span><span class='nm'>${escapeHtml(nm)}</span>${grp}</td>`;
     dates.forEach(({day})=>{
-      const k = kid.id + "|" + dateKey(day);
-      const rec = att[k] || { present:false, paid:false };
-      const st = rec.paid ? 2 : (rec.present ? 1 : 0);
-      html += `<td class='cell'><button data-child='${kid.id}' data-date='${dateKey(day)}' data-state='${st}'><span class='mark'>${st? CHECK : ""}</span></button></td>`;
+      const dk = dateKey(day);
+      if (slots > 1){
+        let inner = "";
+        for (let s=1; s<=slots; s++){
+          const k = kid.id + "|" + dk + (s>1 ? "|"+s : "");
+          const rec = att[k] || { present:false, paid:false };
+          const st = rec.paid ? 2 : (rec.present ? 1 : 0);
+          inner += `<button data-child='${kid.id}' data-date='${dk}' data-slot='${s}' data-state='${st}'><span class='mark'>${st? CHECK : ""}</span></button>`;
+        }
+        html += `<td class='cell multi'><div class='pair'>${inner}</div></td>`;
+      } else {
+        const k = kid.id + "|" + dk;
+        const rec = att[k] || { present:false, paid:false };
+        const st = rec.paid ? 2 : (rec.present ? 1 : 0);
+        html += `<td class='cell'><button data-child='${kid.id}' data-date='${dk}' data-slot='1' data-state='${st}'><span class='mark'>${st? CHECK : ""}</span></button></td>`;
+      }
     });
     html += "</tr>";
   });
@@ -654,7 +673,7 @@ async function cycleCell(btn){
   state.saving++;
   try{
     const r = await api({ action:"setAttendance", token:state.token, academy:state.academy.key,
-      childId:btn.dataset.child, date:btn.dataset.date, present, paid });
+      childId:btn.dataset.child, date:btn.dataset.date, slot:parseInt(btn.dataset.slot||"1",10), present, paid });
     if (r.error === "session_expired"){ toast("Session expired — sign in again", true); signOut(); return; }
     if (!r.ok) throw new Error(r.error||"failed");
     // trust the server's paid value (it enforces the reception-only rule)
