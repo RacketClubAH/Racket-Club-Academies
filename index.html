@@ -274,6 +274,47 @@
     th.col-name,td.col-name{min-width:140px}
     .who .role{display:none}
   }
+
+  /* ── MOBILE COACH MODE ───────────────────────────── */
+  .coach-panel{display:none}
+  .coach-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .coach-panel h3{font-family:var(--display);font-size:25px;font-weight:500;color:var(--mple);margin:2px 0;line-height:1.1}
+  .coach-session-meta{font-size:12px;color:var(--ink-soft)}
+  .coach-refresh{width:44px;height:44px;border-radius:50%;border:1px solid var(--mple-line);background:#fff;color:var(--mple);font-size:25px}
+  .coach-progress{display:flex;align-items:center;gap:10px;margin:16px 0 12px}
+  .coach-progress-bar{height:7px;background:var(--line);border-radius:99px;overflow:hidden;flex:1}
+  .coach-progress-bar span{display:block;height:100%;width:0;background:var(--paid);border-radius:99px;transition:width .2s}
+  .coach-progress>span{font-size:12px;color:var(--ink-soft);white-space:nowrap}
+  .coach-search-wrap{margin-bottom:12px}
+  .coach-search{width:100%;height:46px;border:1px solid var(--pearl);border-radius:12px;background:#fff;padding:0 14px;font:14px var(--ui);color:var(--ink)}
+  .coach-search:focus{outline:none;border-color:var(--mple)}
+  .coach-list{display:flex;flex-direction:column;gap:8px}
+  .coach-player{display:flex;align-items:center;gap:10px;padding:10px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 2px 8px rgba(0,32,90,.04)}
+  .coach-player .avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--mple-soft);color:var(--mple);font-size:13px;font-weight:600;flex:0 0 auto}
+  .coach-player .player-info{min-width:0;flex:1}
+  .coach-player .player-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .coach-player .player-group{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--bronze);margin-top:1px}
+  .coach-attend{min-width:100px;height:44px;border-radius:11px;border:1px solid var(--mple-line);background:#fff;color:var(--mple);font:500 13px var(--ui)}
+  .coach-attend.present{background:var(--mple);border-color:var(--mple);color:#fff}
+  .coach-attend.paid{background:var(--paid);border-color:var(--paid);color:#fff}
+  .coach-empty{text-align:center;padding:28px 12px;color:var(--ink-soft);font-size:13px}
+
+  @media (max-width:700px){
+    .sheet{padding:14px 12px 34px}
+    .topbar{padding:10px 12px}
+    .topbar .brand img{height:30px}
+    .controls{margin:12px 0 10px}
+    .controls .month-nav,.controls .spacer,.controls #addSessionBtn,.controls #manageBtn,.controls #refreshBtn,.controls .synced{display:none}
+    .acad-switch{margin:8px 0 12px;overflow:auto;flex-wrap:nowrap;padding-bottom:2px}
+    .acad-chip{white-space:nowrap;min-height:40px}
+    .legend{display:none}
+    .desktop-register{display:none}
+    .coach-panel{display:block}
+    #addChildBtn{margin-left:auto;min-height:40px}
+    .coach-panel.hidden{display:none}
+  }
+  @media (min-width:701px){#coachPanel{display:none !important}}
+
   @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
 </style>
 </head>
@@ -354,7 +395,26 @@
       <div class="item" id="cellHint" style="color:var(--ink-soft)">Tap a cell to cycle</div>
     </div>
 
-    <div class="grid-wrap" id="gridWrap" style="position:relative">
+    <section class="coach-panel hidden" id="coachPanel">
+      <div class="coach-panel-head">
+        <div>
+          <span class="eyebrow">Today</span>
+          <h3 id="coachSessionTitle">—</h3>
+          <div class="coach-session-meta" id="coachSessionMeta"></div>
+        </div>
+        <button class="coach-refresh" id="coachRefresh" aria-label="Refresh attendance">↻</button>
+      </div>
+      <div class="coach-progress">
+        <div class="coach-progress-bar"><span id="coachProgressBar"></span></div>
+        <span id="coachProgressText">0 / 0 present</span>
+      </div>
+      <div class="coach-search-wrap">
+        <input id="coachSearch" class="coach-search" type="search" placeholder="Find a player…" autocomplete="off">
+      </div>
+      <div class="coach-list" id="coachList"></div>
+    </section>
+
+    <div class="grid-wrap desktop-register" id="gridWrap" style="position:relative">
       <div class="veil" id="gridVeil"><div class="spin"></div></div>
       <table class="grid" id="grid"></table>
     </div>
@@ -540,6 +600,7 @@ async function loadAndRender(silent){
     state.data = r;
     state.lastSync = new Date();
     renderGrid();
+    renderCoachPanel();
     updateSynced();
   }catch(err){
     if(!silent) toast("Connection problem", true); console.error(err);
@@ -569,7 +630,7 @@ function silentRefresh(){
 }
 function startAutoRefresh(){
   if (refreshTimer) clearInterval(refreshTimer);
-  refreshTimer = setInterval(silentRefresh, 30000);  // every 30s
+  refreshTimer = setInterval(silentRefresh, 5000);  // near-live: every 5s
 }
 
 function renderGrid(){
@@ -646,6 +707,123 @@ function renderGrid(){
   $("nAdd").onclick = addChild;
   $("nCancel").onclick = ()=>{ $("addRow").classList.add("hidden"); };
   $("ns").addEventListener("keydown", e=>{ if(e.key==="Enter") addChild(); });
+  renderCoachPanel();
+}
+
+
+/* ---------- mobile coach view ---------- */
+function todayKey(){
+  const n = new Date();
+  return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0");
+}
+
+function renderCoachPanel(){
+  if (!$("coachPanel") || !state.academy || !state.data) return;
+
+  const today = todayKey();
+  const hasToday = sessionDates().some(d => dateKey(d.day) === today);
+  const slots = state.academy.slots || 1;
+  const kids = state.data.children || [];
+  const att = state.data.attendance || {};
+
+  $("coachSessionTitle").textContent = hasToday ? "Today's session" : "No session today";
+  $("coachSessionMeta").textContent = hasToday
+    ? (slots > 1 ? "Tap to mark attendance · 2-hour session" : "Tap to mark attendance")
+    : "The next scheduled session will appear here.";
+
+  if (!hasToday){
+    $("coachList").innerHTML = '<div class="coach-empty">No academy session is scheduled for today.</div>';
+    $("coachProgressText").textContent = "0 / 0 present";
+    $("coachProgressBar").style.width = "0%";
+    return;
+  }
+
+  const search = (($("coachSearch")?.value || "").trim().toLowerCase());
+  const visibleKids = kids.filter(k => {
+    const name = ((k.first||"")+" "+(k.surname||"")).trim().toLowerCase();
+    return !search || name.includes(search);
+  });
+
+  const recordFor = (kid, slot) => {
+    const key = kid.id + "|" + today + (slot > 1 ? "|" + slot : "");
+    return att[key] || {present:false,paid:false};
+  };
+
+  let presentCount = 0;
+  kids.forEach(k => { for(let s=1;s<=slots;s++) if(recordFor(k,s).present) presentCount++; });
+  const denominator = kids.length * slots;
+  $("coachProgressText").textContent = `${presentCount} / ${denominator} present`;
+  $("coachProgressBar").style.width = (denominator ? Math.round(presentCount/denominator*100) : 0) + "%";
+
+  if (!visibleKids.length){
+    $("coachList").innerHTML = '<div class="coach-empty">No players match your search.</div>';
+    return;
+  }
+
+  $("coachList").innerHTML = visibleKids.map(k => {
+    const name = ((k.first||"")+" "+(k.surname||"")).trim();
+    const initials = ((k.first||"").charAt(0)+(k.surname||"").charAt(0)).toUpperCase() || "?";
+    const group = k.group ? `<div class="player-group">${escapeHtml(k.group)}</div>` : "";
+
+    if (slots > 1){
+      let buttons = "";
+      for(let s=1;s<=slots;s++){
+        const r = recordFor(k,s);
+        const cls = r.paid ? "paid" : (r.present ? "present" : "");
+        buttons += `<button class="coach-attend ${cls}" data-coach-child="${escapeAttr(k.id)}" data-coach-slot="${s}">${r.present ? "Hour "+s+" ✓" : "Hour "+s}</button>`;
+      }
+      return `<div class="coach-player"><div class="avatar">${initials}</div><div class="player-info"><div class="player-name">${escapeHtml(name)}</div>${group}</div><div style="display:flex;gap:5px">${buttons}</div></div>`;
+    }
+
+    const r = recordFor(k,1);
+    const cls = r.paid ? "paid" : (r.present ? "present" : "");
+    return `<div class="coach-player"><div class="avatar">${initials}</div><div class="player-info"><div class="player-name">${escapeHtml(name)}</div>${group}</div><button class="coach-attend ${cls}" data-coach-child="${escapeAttr(k.id)}" data-coach-slot="1">${r.present ? "Present ✓" : "Absent"}</button></div>`;
+  }).join("");
+
+  $("coachList").querySelectorAll("[data-coach-child]").forEach(btn => {
+    btn.onclick = () => cycleCoachAttendance(btn);
+  });
+}
+
+async function cycleCoachAttendance(btn){
+  const childId = btn.dataset.coachChild;
+  const slot = parseInt(btn.dataset.coachSlot || "1",10);
+  const today = todayKey();
+  const att = state.data.attendance || {};
+  const key = childId + "|" + today + (slot > 1 ? "|" + slot : "");
+  const oldRec = {...(att[key] || {present:false,paid:false})};
+
+  if (oldRec.paid && !state.isAdmin){
+    toast("Only reception can change paid");
+    return;
+  }
+
+  const next = {...oldRec, present:!oldRec.present};
+  if (!next.present) next.paid = false;
+  att[key] = next;
+  state.data.attendance = att;
+
+  // Instant UI feedback before the network request finishes.
+  renderCoachPanel();
+
+  state.saving++;
+  try{
+    const r = await api({
+      action:"setAttendance", token:state.token, academy:state.academy.key,
+      childId, date:today, slot, present:next.present, paid:next.paid
+    });
+    if (r.error === "session_expired"){ signOut(); return; }
+    if (!r.ok) throw new Error(r.error||"failed");
+    if (typeof r.paid === "boolean") next.paid = r.paid;
+    renderCoachPanel();
+  }catch(err){
+    att[key] = oldRec;
+    renderCoachPanel();
+    toast("Didn't save — try again", true);
+    console.error(err);
+  }finally{
+    state.saving = Math.max(0,state.saving-1);
+  }
 }
 
 /* ---------- cell cycle: absent → present → paid → absent ---------- */
@@ -769,6 +947,8 @@ $("addChildBtn").onclick = openAddChild;
 $("addSessionBtn").onclick = addSession;
 $("manageBtn").onclick = toggleManage;
 $("refreshBtn").onclick = ()=> loadAndRender();
+  $("coachRefresh").onclick = ()=> loadAndRender();
+  $("coachSearch").addEventListener("input", renderCoachPanel);
 // when the coach switches back to this tab, pull the latest immediately
 document.addEventListener("visibilitychange", ()=>{ if (!document.hidden) silentRefresh(); });
 
