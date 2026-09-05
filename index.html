@@ -285,6 +285,13 @@
   .coach-progress-bar{height:7px;background:var(--line);border-radius:99px;overflow:hidden;flex:1}
   .coach-progress-bar span{display:block;height:100%;width:0;background:var(--paid);border-radius:99px;transition:width .2s}
   .coach-progress>span{font-size:12px;color:var(--ink-soft);white-space:nowrap}
+  .coach-save{
+    width:100%;height:48px;border:0;border-radius:12px;background:var(--mple);color:#fff;
+    font:500 14px var(--ui);margin:0 0 12px;transition:opacity .15s,transform .05s
+  }
+  .coach-save:disabled{opacity:.35;cursor:default}
+  .coach-save:not(:disabled):active{transform:scale(.99)}
+  .coach-save.saving{opacity:.65}
   .coach-search-wrap{margin-bottom:12px}
   .coach-search{width:100%;height:46px;border:1px solid var(--pearl);border-radius:12px;background:#fff;padding:0 14px;font:14px var(--ui);color:var(--ink)}
   .coach-search:focus{outline:none;border-color:var(--mple)}
@@ -407,6 +414,7 @@
         <div class="coach-progress-bar"><span id="coachProgressBar"></span></div>
         <span id="coachProgressText">0 / 0 present</span>
       </div>
+      <button class="coach-save" id="coachSave" disabled>Save attendance</button>
       <div class="coach-search-wrap">
         <input id="coachSearch" class="coach-search" type="search" placeholder="Find a player…" autocomplete="off">
       </div>
@@ -444,7 +452,8 @@ let state = {
   data: null,
   saving: 0,           // in-flight saves; auto-refresh pauses while > 0
   lastSync: null,
-  isAdmin: false       // reception accounts; only they can set the paid flag
+  isAdmin: false,      // reception accounts; only they can set the paid flag
+  dirtyAttendance: {}  // mobile changes waiting to be synced
 };
 let refreshTimer = null;
 
@@ -532,7 +541,7 @@ function enterApp(){
 
 function signOut(){
   clearSession();
-  state = { token:null, displayName:"", academies:[], academy:null, month:null, data:null, saving:0, lastSync:null, isAdmin:false };
+  state = { token:null, displayName:"", academies:[], academy:null, month:null, data:null, saving:0, lastSync:null, isAdmin:false, dirtyAttendance:{} };
   $("appView").classList.add("hidden");
   $("loginView").classList.remove("hidden");
   $("p").value = "";
@@ -622,8 +631,11 @@ function updateSynced(){
 /* ---------- live refresh: keep the board current for everyone ---------- */
 function silentRefresh(){
   if (document.hidden) return;          // don't poll a backgrounded tab
-  if (state.saving > 0) return;         // never overwrite an in-flight tap
+  if (state.saving > 0) return;
   if (!state.token || !state.academy) return;
+  // Coaches on phones work offline-first during the session and explicitly save
+  // when finished. Do not overwrite their local checklist with polling.
+  if (window.matchMedia && window.matchMedia("(max-width:700px)").matches && !state.isAdmin) return;
   if (document.body.classList.contains("managing")) return; // not mid roster edit
   if ($("addRow") && !$("addRow").classList.contains("hidden")) return; // not mid add
   loadAndRender(true);
@@ -736,6 +748,71 @@ function updateCoachProgress(){
   const pct = denominator ? Math.round(presentCount / denominator * 100) : 0;
   if ($("coachProgressText")) $("coachProgressText").textContent = `${presentCount} / ${denominator} present`;
   if ($("coachProgressBar")) $("coachProgressBar").style.width = pct + "%";
+
+  const dirtyCount = Object.keys(state.dirtyAttendance || {}).length;
+  const save = $("coachSave");
+  if (save){
+    save.disabled = dirtyCount === 0;
+    save.textContent = dirtyCount
+      ? `Save attendance · ${dirtyCount} change${dirtyCount === 1 ? "" : "s"}`
+      : "Attendance saved";
+  }
+}
+
+async function saveCoachAttendance(){
+  const changes = Object.entries(state.dirtyAttendance || {});
+  if (!changes.length) return;
+
+  const save = $("coachSave");
+  if (save){
+    save.disabled = true;
+    save.classList.add("saving");
+    save.textContent = `Saving ${changes.length} change${changes.length === 1 ? "" : "s"}…`;
+  }
+
+  try{
+    // The current Apps Script API saves one attendance record per request.
+    // Send all changed records together from the phone, then reconcile once.
+    const results = await Promise.all(changes.map(async ([key, item]) => {
+      const rec = state.data.attendance[key] || {present:false,paid:false};
+      const r = await api({
+        action:"setAttendance",
+        token:state.token,
+        academy:state.academy.key,
+        childId:item.childId,
+        date:item.date,
+        slot:item.slot,
+        present:!!rec.present,
+        paid:!!rec.paid
+      });
+      if (r.error === "session_expired") throw new Error("session_expired");
+      if (!r.ok) throw new Error(r.error || "failed");
+      return {key, paid:typeof r.paid === "boolean" ? r.paid : !!rec.paid};
+    }));
+
+    // Apply any server-enforced paid values, then clear the pending queue.
+    results.forEach(({key,paid}) => {
+      if (state.data.attendance[key]) state.data.attendance[key].paid = paid;
+    });
+    state.dirtyAttendance = {};
+    toast("Attendance saved");
+    renderCoachPanel();
+  }catch(err){
+    if (err.message === "session_expired"){
+      toast("Session expired — sign in again", true);
+      signOut();
+      return;
+    }
+    toast("Some attendance didn't save — try again", true);
+    console.error(err);
+    // Keep dirtyAttendance intact so the coach can press Save again.
+    updateCoachProgress();
+  }finally{
+    if (save){
+      save.classList.remove("saving");
+      updateCoachProgress();
+    }
+  }
 }
 
 function renderCoachPanel(){
@@ -806,7 +883,7 @@ function renderCoachPanel(){
   });
 }
 
-async function cycleCoachAttendance(btn){
+function cycleCoachAttendance(btn){
   const childId = btn.dataset.coachChild;
   const slot = parseInt(btn.dataset.coachSlot || "1",10);
   const today = todayKey();
@@ -819,79 +896,35 @@ async function cycleCoachAttendance(btn){
     return;
   }
 
-  // IMPORTANT: update the exact button immediately.
-  // Do not re-render the whole list here — that was causing the tick to
-  // appear, disappear, and appear again while the network request completed.
   const next = {...oldRec, present:!oldRec.present};
   if (!next.present) next.paid = false;
 
+  // Change is LOCAL and instantaneous. Nothing is sent to the server here.
   att[key] = next;
   state.data.attendance = att;
 
-  // Paint the tapped button synchronously.
-  const isPresent = next.present;
-  btn.classList.toggle("present", isPresent && !next.paid);
+  // Remember the original server value so Save can send only actual changes.
+  if (!state.dirtyAttendance[key]){
+    state.dirtyAttendance[key] = {
+      childId, date:today, slot,
+      original:{...oldRec}
+    };
+  }
+
+  // If the coach toggles back to the original state, there is nothing to save.
+  const original = state.dirtyAttendance[key].original;
+  if (!!next.present === !!original.present && !!next.paid === !!original.paid){
+    delete state.dirtyAttendance[key];
+  }
+
+  // Update ONLY this button immediately — no list redraw and no network request.
+  btn.classList.toggle("present", next.present && !next.paid);
   btn.classList.toggle("paid", !!next.paid);
-  btn.textContent = isPresent
+  btn.textContent = next.present
     ? (slot > 1 ? "Hour " + slot + " ✓" : "Present ✓")
     : (slot > 1 ? "Hour " + slot : "Absent");
 
-  btn.disabled = true;
-  btn.dataset.pending = "true";
-
-  // Update the counter without rebuilding the player list.
   updateCoachProgress();
-
-  state.saving++;
-  try{
-    const r = await api({
-      action:"setAttendance",
-      token:state.token,
-      academy:state.academy.key,
-      childId,
-      date:today,
-      slot,
-      present:next.present,
-      paid:next.paid
-    });
-
-    if (r.error === "session_expired"){ signOut(); return; }
-    if (!r.ok) throw new Error(r.error||"failed");
-
-    // Server confirmation only adjusts the paid flag if necessary.
-    if (typeof r.paid === "boolean"){
-      next.paid = r.paid;
-      btn.classList.toggle("paid", !!next.paid);
-      btn.classList.toggle("present", !!next.present && !next.paid);
-    }
-
-    // Keep the exact tick on screen. No full render.
-    btn.textContent = next.present
-      ? (slot > 1 ? "Hour " + slot + " ✓" : "Present ✓")
-      : (slot > 1 ? "Hour " + slot : "Absent");
-
-    delete btn.dataset.pending;
-    // Reconcile with the server shortly after the write, without interrupting
-    // the just-tapped button.
-    setTimeout(() => {
-      if (!document.hidden && state.saving === 0) silentRefresh();
-    }, 1200);
-  }catch(err){
-    // Only revert if THIS save failed.
-    att[key] = oldRec;
-    btn.classList.toggle("paid", !!oldRec.paid);
-    btn.classList.toggle("present", !!oldRec.present && !oldRec.paid);
-    btn.textContent = oldRec.present
-      ? (slot > 1 ? "Hour " + slot + " ✓" : "Present ✓")
-      : (slot > 1 ? "Hour " + slot : "Absent");
-    toast("Didn't save — try again", true);
-    console.error(err);
-    delete btn.dataset.pending;
-    updateCoachProgress();
-  }finally{
-    btn.disabled = false;
-    state.saving = Math.max(0,state.saving-1);
-  }
 }
 
 /* ---------- cell cycle: absent → present → paid → absent ---------- */
@@ -1015,7 +1048,14 @@ $("addChildBtn").onclick = openAddChild;
 $("addSessionBtn").onclick = addSession;
 $("manageBtn").onclick = toggleManage;
 $("refreshBtn").onclick = ()=> loadAndRender();
-  $("coachRefresh").onclick = ()=> loadAndRender();
+  $("coachRefresh").onclick = async ()=>{
+    if (Object.keys(state.dirtyAttendance || {}).length){
+      if (!confirm("You have unsaved attendance changes. Refresh and discard them?")) return;
+      state.dirtyAttendance = {};
+    }
+    await loadAndRender();
+  };
+  $("coachSave").onclick = saveCoachAttendance;
   $("coachSearch").addEventListener("input", renderCoachPanel);
 // when the coach switches back to this tab, pull the latest immediately
 document.addEventListener("visibilitychange", ()=>{ if (!document.hidden) silentRefresh(); });
