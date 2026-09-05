@@ -275,6 +275,40 @@
     .who .role{display:none}
   }
 
+
+  /* ── ADMIN SETTINGS ──────────────────────────────── */
+  .admin-only.hidden{display:none !important}
+  .settings-modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+  .settings-modal.hidden{display:none}
+  .settings-backdrop{position:absolute;inset:0;background:rgba(20,25,35,.42);backdrop-filter:blur(2px)}
+  .settings-card{position:relative;width:min(680px,100%);max-height:min(88dvh,760px);overflow:auto;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.18);padding:24px}
+  .settings-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:22px}
+  .settings-head h3{font-family:var(--display);color:var(--mple);font-size:27px;font-weight:500;margin:3px 0}
+  .settings-head p{font-size:13px;color:var(--ink-soft);margin:4px 0 0}
+  .settings-close{width:36px;height:36px;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--ink-soft);font-size:23px;line-height:1}
+  .academy-settings-list{display:flex;flex-direction:column;gap:12px}
+  .academy-setting{border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--foam)}
+  .academy-setting-title{font-family:var(--display);font-size:20px;color:var(--mple);margin-bottom:3px}
+  .academy-setting-info{font-size:11px;color:var(--ink-soft);margin-bottom:12px}
+  .weekday-row{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .weekday input{position:absolute;opacity:0;pointer-events:none}
+  .weekday label{display:flex;align-items:center;justify-content:center;min-height:42px;border:1px solid var(--mple-line);border-radius:9px;background:#fff;color:var(--mple);font-size:12px;font-weight:500;cursor:pointer;user-select:none}
+  .weekday input:checked + label{background:var(--mple);border-color:var(--mple);color:#fff}
+  .settings-foot{display:flex;justify-content:space-between;gap:15px;align-items:center;border-top:1px solid var(--line);margin-top:20px;padding-top:16px}
+  .settings-note{font-size:11px;color:var(--ink-soft);max-width:320px}
+  .settings-actions{display:flex;gap:8px;align-items:center}
+  .settings-save{width:auto;margin:0;padding:10px 18px}
+  @media (max-width:700px){
+    .settings-modal{padding:10px;align-items:flex-end}
+    .settings-card{max-height:92dvh;border-radius:18px 18px 10px 10px;padding:18px}
+    .weekday-row{grid-template-columns:repeat(7,1fr);gap:4px}
+    .weekday label{min-height:45px;font-size:10px}
+    .settings-foot{flex-direction:column;align-items:stretch}
+    .settings-note{max-width:none}
+    .settings-actions{display:grid;grid-template-columns:1fr 1fr}
+    .settings-actions button{width:100%}
+  }
+
   /* ── MOBILE COACH MODE ───────────────────────────── */
   .coach-panel{display:none}
   .coach-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -387,6 +421,13 @@
         Add child
       </button>
       <button class="ghost-btn" id="manageBtn" aria-pressed="false">Manage roster</button>
+      <button class="ghost-btn admin-only hidden" id="settingsBtn" title="Academy settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/>
+          <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 1.7-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V20h-2.4v-.2a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-1.7-1.7.06-.06A1.7 1.7 0 0 0 8.46 15a1.7 1.7 0 0 0-1.56-1.03H6.7v-2.4h.2A1.7 1.7 0 0 0 8.46 10a1.7 1.7 0 0 0-.34-1.88l-.06-.06 1.7-1.7.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 12.73 5.2V5h2.4v.2a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.7 1.7-.06.06a1.7 1.7 0 0 0-.34 1.88A1.7 1.7 0 0 0 20.96 11h.2v2.4h-.2A1.7 1.7 0 0 0 19.4 15Z"/>
+        </svg>
+        Settings
+      </button>
       <button class="ghost-btn" id="refreshBtn" title="Refresh the register now">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
         Refresh
@@ -424,6 +465,32 @@
     <div class="grid-wrap desktop-register" id="gridWrap" style="position:relative">
       <div class="veil" id="gridVeil"><div class="spin"></div></div>
       <table class="grid" id="grid"></table>
+    </div>
+  </div>
+</section>
+
+
+<!-- ───────── ADMIN SETTINGS ───────── -->
+<section id="settingsModal" class="settings-modal hidden" aria-hidden="true">
+  <div class="settings-backdrop" id="settingsBackdrop"></div>
+  <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="settings-head">
+      <div>
+        <span class="eyebrow">Administration</span>
+        <h3 id="settingsTitle">Academy schedule</h3>
+        <p>Choose the regular days on which each academy runs.</p>
+      </div>
+      <button class="settings-close" id="settingsClose" aria-label="Close">×</button>
+    </div>
+
+    <div id="academySettingsList" class="academy-settings-list"></div>
+
+    <div class="settings-foot">
+      <span class="settings-note">Changes affect future attendance registers and mobile sessions.</span>
+      <div class="settings-actions">
+        <button class="ghost-btn" id="settingsCancel">Cancel</button>
+        <button class="btn-primary settings-save" id="settingsSave">Save settings</button>
+      </div>
     </div>
   </div>
 </section>
@@ -524,6 +591,7 @@ function enterApp(){
   $("loginView").classList.add("hidden");
   $("appView").classList.remove("hidden");
   $("coachPanel")?.classList.remove("hidden");
+  $("settingsBtn")?.classList.toggle("hidden", !state.isAdmin);
   $("coachName").textContent = state.displayName || "Coach";
   $("coachRole").textContent = state.isAdmin
     ? "· Reception"
@@ -546,6 +614,9 @@ function signOut(){
   $("loginView").classList.remove("hidden");
   $("p").value = "";
   document.body.classList.remove("managing");
+  $("settingsModal")?.classList.add("hidden");
+  $("settingsModal")?.setAttribute("aria-hidden","true");
+  $("settingsBtn")?.classList.add("hidden");
 }
 
 /* ---------- academy switcher ---------- */
@@ -722,6 +793,106 @@ function renderGrid(){
   renderCoachPanel();
 }
 
+
+
+/* ---------- admin academy schedule settings ---------- */
+const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const DAY_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+function openSettings(){
+  if (!state.isAdmin) return;
+  const list = $("academySettingsList");
+  list.innerHTML = "";
+
+  (state.academies || []).forEach((academy, index) => {
+    const selected = Array.isArray(academy.weekdays) ? academy.weekdays : [];
+    const row = document.createElement("div");
+    row.className = "academy-setting";
+    row.dataset.academyKey = academy.key;
+
+    row.innerHTML = `
+      <div class="academy-setting-title">${escapeHtml(academy.name || academy.key)}</div>
+      <div class="academy-setting-info">${escapeHtml(academy.info || "Regular academy schedule")}</div>
+      <div class="weekday-row">
+        ${DAY_SHORT.map((d, day) => `
+          <div class="weekday">
+            <input type="checkbox" id="set-${index}-${day}" data-day="${day}" ${selected.indexOf(day) >= 0 ? "checked" : ""}>
+            <label for="set-${index}-${day}" title="${DAY_NAMES[day]}">${d}</label>
+          </div>
+        `).join("")}
+      </div>`;
+    list.appendChild(row);
+  });
+
+  $("settingsModal").classList.remove("hidden");
+  $("settingsModal").setAttribute("aria-hidden","false");
+}
+
+function closeSettings(){
+  $("settingsModal").classList.add("hidden");
+  $("settingsModal").setAttribute("aria-hidden","true");
+}
+
+async function saveSettings(){
+  if (!state.isAdmin) return;
+
+  const rows = [...$("academySettingsList").querySelectorAll(".academy-setting")];
+  const schedules = rows.map(row => ({
+    key: row.dataset.academyKey,
+    weekdays: [...row.querySelectorAll("input:checked")].map(x => Number(x.dataset.day))
+  }));
+
+  if (schedules.some(x => !x.weekdays.length)){
+    toast("Each academy needs at least one day", true);
+    return;
+  }
+
+  const btn = $("settingsSave");
+  btn.disabled = true;
+  btn.textContent = "Saving…";
+
+  try{
+    /*
+      Backend action required:
+      { action:"updateAcademySchedules", token, schedules:[{key,weekdays:[0..6]}] }
+      The backend must verify the session is an admin before writing.
+    */
+    const r = await api({
+      action:"updateAcademySchedules",
+      token:state.token,
+      schedules
+    });
+
+    if (r.error === "session_expired"){ signOut(); return; }
+    if (!r.ok) throw new Error(r.error || "failed");
+
+    // Use server-returned academies if supplied; otherwise update the local
+    // academy objects from the saved schedule.
+    if (Array.isArray(r.academies)){
+      state.academies = r.academies;
+    }else{
+      schedules.forEach(s => {
+        const a = state.academies.find(x => x.key === s.key);
+        if (a) a.weekdays = s.weekdays;
+      });
+    }
+
+    saveSession();
+    renderAcademySwitch();
+    closeSettings();
+
+    // Reload the currently selected academy so the new days are reflected
+    // immediately in the monthly register.
+    await loadAndRender();
+    toast("Academy schedules updated");
+  }catch(err){
+    toast("Couldn't save settings — backend update required", true);
+    console.error(err);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "Save settings";
+  }
+}
 
 /* ---------- mobile coach view ---------- */
 function todayKey(){
@@ -1057,6 +1228,11 @@ $("refreshBtn").onclick = ()=> loadAndRender();
   };
   $("coachSave").onclick = saveCoachAttendance;
   $("coachSearch").addEventListener("input", renderCoachPanel);
+  $("settingsBtn").onclick = openSettings;
+  $("settingsClose").onclick = closeSettings;
+  $("settingsCancel").onclick = closeSettings;
+  $("settingsBackdrop").onclick = closeSettings;
+  $("settingsSave").onclick = saveSettings;
 // when the coach switches back to this tab, pull the latest immediately
 document.addEventListener("visibilitychange", ()=>{ if (!document.hidden) silentRefresh(); });
 
