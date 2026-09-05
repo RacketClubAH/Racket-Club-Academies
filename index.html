@@ -294,7 +294,7 @@
   .coach-player .player-info{min-width:0;flex:1}
   .coach-player .player-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .coach-player .player-group{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--bronze);margin-top:1px}
-  .coach-attend{min-width:100px;height:44px;border-radius:11px;border:1px solid var(--mple-line);background:#fff;color:var(--mple);font:500 13px var(--ui)}
+  .coach-attend{-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;min-width:100px;height:44px;border-radius:11px;border:1px solid var(--mple-line);background:#fff;color:var(--mple);font:500 13px var(--ui)}
   .coach-attend.present{background:var(--mple);border-color:var(--mple);color:#fff}
   .coach-attend.paid{background:var(--paid);border-color:var(--paid);color:#fff}
   .coach-empty{text-align:center;padding:28px 12px;color:var(--ink-soft);font-size:13px}
@@ -622,7 +622,7 @@ function updateSynced(){
 /* ---------- live refresh: keep the board current for everyone ---------- */
 function silentRefresh(){
   if (document.hidden) return;          // don't poll a backgrounded tab
-  if (state.saving > 0) return;         // don't fight an in-flight save
+  if (state.saving > 0) return;         // never overwrite an in-flight tap
   if (!state.token || !state.academy) return;
   if (document.body.classList.contains("managing")) return; // not mid roster edit
   if ($("addRow") && !$("addRow").classList.contains("hidden")) return; // not mid add
@@ -717,6 +717,27 @@ function todayKey(){
   return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0");
 }
 
+function updateCoachProgress(){
+  if (!state.academy || !state.data) return;
+  const today = todayKey();
+  const slots = state.academy.slots || 1;
+  const kids = state.data.children || [];
+  const att = state.data.attendance || {};
+
+  let presentCount = 0;
+  kids.forEach(k => {
+    for(let s=1;s<=slots;s++){
+      const key = k.id + "|" + today + (s > 1 ? "|" + s : "");
+      if (att[key]?.present) presentCount++;
+    }
+  });
+
+  const denominator = kids.length * slots;
+  const pct = denominator ? Math.round(presentCount / denominator * 100) : 0;
+  if ($("coachProgressText")) $("coachProgressText").textContent = `${presentCount} / ${denominator} present`;
+  if ($("coachProgressBar")) $("coachProgressBar").style.width = pct + "%";
+}
+
 function renderCoachPanel(){
   if (!$("coachPanel") || !state.academy || !state.data) return;
 
@@ -798,30 +819,77 @@ async function cycleCoachAttendance(btn){
     return;
   }
 
+  // IMPORTANT: update the exact button immediately.
+  // Do not re-render the whole list here — that was causing the tick to
+  // appear, disappear, and appear again while the network request completed.
   const next = {...oldRec, present:!oldRec.present};
   if (!next.present) next.paid = false;
+
   att[key] = next;
   state.data.attendance = att;
 
-  // Instant UI feedback before the network request finishes.
-  renderCoachPanel();
+  // Paint the tapped button synchronously.
+  const isPresent = next.present;
+  btn.classList.toggle("present", isPresent && !next.paid);
+  btn.classList.toggle("paid", !!next.paid);
+  btn.textContent = isPresent
+    ? (slot > 1 ? "Hour " + slot + " ✓" : "Present ✓")
+    : (slot > 1 ? "Hour " + slot : "Absent");
+
+  btn.disabled = true;
+  btn.dataset.pending = "true";
+
+  // Update the counter without rebuilding the player list.
+  updateCoachProgress();
 
   state.saving++;
   try{
     const r = await api({
-      action:"setAttendance", token:state.token, academy:state.academy.key,
-      childId, date:today, slot, present:next.present, paid:next.paid
+      action:"setAttendance",
+      token:state.token,
+      academy:state.academy.key,
+      childId,
+      date:today,
+      slot,
+      present:next.present,
+      paid:next.paid
     });
+
     if (r.error === "session_expired"){ signOut(); return; }
     if (!r.ok) throw new Error(r.error||"failed");
-    if (typeof r.paid === "boolean") next.paid = r.paid;
-    renderCoachPanel();
+
+    // Server confirmation only adjusts the paid flag if necessary.
+    if (typeof r.paid === "boolean"){
+      next.paid = r.paid;
+      btn.classList.toggle("paid", !!next.paid);
+      btn.classList.toggle("present", !!next.present && !next.paid);
+    }
+
+    // Keep the exact tick on screen. No full render.
+    btn.textContent = next.present
+      ? (slot > 1 ? "Hour " + slot + " ✓" : "Present ✓")
+      : (slot > 1 ? "Hour " + slot : "Absent");
+
+    delete btn.dataset.pending;
+    // Reconcile with the server shortly after the write, without interrupting
+    // the just-tapped button.
+    setTimeout(() => {
+      if (!document.hidden && state.saving === 0) silentRefresh();
+    }, 1200);
   }catch(err){
+    // Only revert if THIS save failed.
     att[key] = oldRec;
-    renderCoachPanel();
+    btn.classList.toggle("paid", !!oldRec.paid);
+    btn.classList.toggle("present", !!oldRec.present && !oldRec.paid);
+    btn.textContent = oldRec.present
+      ? (slot > 1 ? "Hour " + slot + " ✓" : "Present ✓")
+      : (slot > 1 ? "Hour " + slot : "Absent");
     toast("Didn't save — try again", true);
     console.error(err);
+    delete btn.dataset.pending;
+    updateCoachProgress();
   }finally{
+    btn.disabled = false;
     state.saving = Math.max(0,state.saving-1);
   }
 }
