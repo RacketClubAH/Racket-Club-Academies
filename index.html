@@ -866,7 +866,49 @@ async function saveMobileAddChild(){
     if (!r.ok) throw new Error(r.error || "Couldn't add player");
     closeMobileAddChild();
     toast("Added " + (first || surname));
-    await loadAndRender();
+
+    // Add the new player directly to the current mobile list.
+    // No full register reload is needed, so the coach can mark them immediately.
+    const newChild = r.child || r.newChild || {
+      id: r.childId || r.id || ("local-" + Date.now()),
+      first,
+      surname,
+      group
+    };
+
+    if (!Array.isArray(state.data.children)) state.data.children = [];
+    const exists = state.data.children.some(c => String(c.id) === String(newChild.id));
+    if (!exists){
+      state.data.children.push({
+        id: newChild.id,
+        first: newChild.first ?? first,
+        surname: newChild.surname ?? surname,
+        group: newChild.group ?? group
+      });
+    }
+
+    // Start the new player as Absent for today's session.
+    // This creates the visible button without touching the server attendance yet.
+    const today = todayKey();
+    const slots = state.academy.slots || 1;
+    state.data.attendance = state.data.attendance || {};
+    for(let slot=1; slot<=slots; slot++){
+      const key = newChild.id + "|" + today + (slot > 1 ? "|" + slot : "");
+      if (!state.data.attendance[key]){
+        state.data.attendance[key] = {present:false, paid:false};
+      }
+    }
+
+    renderCoachPanel();
+
+    // Put the newly added player at the bottom and scroll to them.
+    requestAnimationFrame(() => {
+      const rows = [...$("coachList").querySelectorAll(".coach-player")];
+      const row = rows.find(el =>
+        el.querySelector(`[data-coach-child="${CSS.escape(String(newChild.id))}"]`)
+      );
+      row?.scrollIntoView({behavior:"smooth", block:"center"});
+    });
   }catch(err){
     console.error(err);
     toast(err.message || "Couldn't add player — try again", true);
