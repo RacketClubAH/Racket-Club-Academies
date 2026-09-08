@@ -295,10 +295,18 @@
   .weekday label{display:flex;align-items:center;justify-content:center;min-height:42px;border:1px solid var(--mple-line);border-radius:9px;background:#fff;color:var(--mple);font-size:12px;font-weight:500;cursor:pointer;user-select:none}
   .weekday input:checked + label{background:var(--mple);border-color:var(--mple);color:#fff}
   .settings-foot{display:flex;justify-content:space-between;gap:15px;align-items:center;border-top:1px solid var(--line);margin-top:20px;padding-top:16px}
+  .mobile-add-label{display:none}
+  .mobile-add-fields{display:grid;gap:12px}
+  .mobile-add-fields .field{margin:0}
+  .mobile-add-fields .field label span{font-weight:400;color:var(--ink-soft)}
+  .mobile-add-actions{margin-top:20px}
   .settings-note{font-size:11px;color:var(--ink-soft);max-width:320px}
   .settings-actions{display:flex;gap:8px;align-items:center}
   .settings-save{width:auto;margin:0;padding:10px 18px}
   @media (max-width:700px){
+    .desktop-add-label{display:none}
+    .mobile-add-label{display:inline}
+
     .settings-modal{padding:10px;align-items:flex-end}
     .settings-card{max-height:92dvh;border-radius:18px 18px 10px 10px;padding:18px}
     .weekday-row{grid-template-columns:repeat(7,1fr);gap:4px}
@@ -418,7 +426,7 @@
       </button>
       <button class="ghost-btn" id="addChildBtn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-        Add child
+        <span class="desktop-add-label">Add child</span><span class="mobile-add-label">Add player</span>
       </button>
       <button class="ghost-btn" id="manageBtn" aria-pressed="false">Manage roster</button>
       <button class="ghost-btn admin-only hidden" id="settingsBtn" title="Academy settings">
@@ -491,6 +499,30 @@
         <button class="ghost-btn" id="settingsCancel">Cancel</button>
         <button class="btn-primary settings-save" id="settingsSave">Save settings</button>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- MOBILE ADD PLAYER -->
+<section id="mobileAddModal" class="settings-modal hidden" aria-hidden="true">
+  <div class="settings-backdrop" id="mobileAddBackdrop"></div>
+  <div class="settings-card mobile-add-card" role="dialog" aria-modal="true">
+    <div class="settings-head">
+      <div>
+        <span class="eyebrow">Roster</span>
+        <h3>Add player</h3>
+        <p>Add a player directly to this academy's register.</p>
+      </div>
+      <button class="settings-close" id="mobileAddClose" aria-label="Close">×</button>
+    </div>
+    <div class="mobile-add-fields">
+      <div class="field"><label for="mobileAddFirst">First name</label><input id="mobileAddFirst" type="text" autocomplete="given-name"></div>
+      <div class="field"><label for="mobileAddSurname">Surname</label><input id="mobileAddSurname" type="text" autocomplete="family-name"></div>
+      <div class="field"><label for="mobileAddGroup">Group <span>(optional)</span></label><input id="mobileAddGroup" type="text" placeholder="e.g. U10"></div>
+    </div>
+    <div class="settings-actions mobile-add-actions">
+      <button class="ghost-btn" id="mobileAddCancel">Cancel</button>
+      <button class="btn-primary settings-save" id="mobileAddSave">Add player</button>
     </div>
   </div>
 </section>
@@ -615,6 +647,7 @@ function signOut(){
   $("p").value = "";
   document.body.classList.remove("managing");
   $("settingsModal")?.classList.add("hidden");
+  $("mobileAddModal")?.classList.add("hidden");
   $("settingsModal")?.setAttribute("aria-hidden","true");
   $("settingsBtn")?.classList.add("hidden");
 }
@@ -794,6 +827,54 @@ function renderGrid(){
 }
 
 
+
+/* ---------- mobile coach add-player flow ---------- */
+function openMobileAddChild(){
+  if (!state.academy) return;
+  $("mobileAddFirst").value = "";
+  $("mobileAddSurname").value = "";
+  $("mobileAddGroup").value = "";
+  $("mobileAddModal").classList.remove("hidden");
+  $("mobileAddModal").setAttribute("aria-hidden","false");
+  setTimeout(()=> $("mobileAddFirst").focus(), 50);
+}
+function closeMobileAddChild(){
+  $("mobileAddModal").classList.add("hidden");
+  $("mobileAddModal").setAttribute("aria-hidden","true");
+}
+async function saveMobileAddChild(){
+  if (!state.academy) return;
+  const first = $("mobileAddFirst").value.trim();
+  const surname = $("mobileAddSurname").value.trim();
+  const group = $("mobileAddGroup").value.trim();
+  if (!first && !surname){
+    toast("Add a name first", true);
+    $("mobileAddFirst").focus();
+    return;
+  }
+  const btn = $("mobileAddSave");
+  btn.disabled = true;
+  btn.textContent = "Adding…";
+  try{
+    const r = await api({
+      action:"addChild",
+      token:state.token,
+      academy:state.academy.key,
+      first, surname, group
+    });
+    if (r.error === "session_expired"){ signOut(); return; }
+    if (!r.ok) throw new Error(r.error || "Couldn't add player");
+    closeMobileAddChild();
+    toast("Added " + (first || surname));
+    await loadAndRender();
+  }catch(err){
+    console.error(err);
+    toast(err.message || "Couldn't add player — try again", true);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "Add player";
+  }
+}
 
 /* ---------- admin academy schedule settings ---------- */
 const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
@@ -1215,7 +1296,10 @@ $("u").addEventListener("keydown", e=>{ if(e.key==="Enter") $("p").focus(); });
 $("signOut").onclick = signOut;
 $("prevMonth").onclick = ()=> shiftMonth(-1);
 $("nextMonth").onclick = ()=> shiftMonth(1);
-$("addChildBtn").onclick = openAddChild;
+$("addChildBtn").onclick = ()=>{
+  if (window.matchMedia && window.matchMedia("(max-width:700px)").matches) openMobileAddChild();
+  else openAddChild();
+};
 $("addSessionBtn").onclick = addSession;
 $("manageBtn").onclick = toggleManage;
 $("refreshBtn").onclick = ()=> loadAndRender();
@@ -1233,6 +1317,12 @@ $("refreshBtn").onclick = ()=> loadAndRender();
   $("settingsCancel").onclick = closeSettings;
   $("settingsBackdrop").onclick = closeSettings;
   $("settingsSave").onclick = saveSettings;
+  $("mobileAddClose").onclick = closeMobileAddChild;
+  $("mobileAddCancel").onclick = closeMobileAddChild;
+  $("mobileAddBackdrop").onclick = closeMobileAddChild;
+  $("mobileAddSave").onclick = saveMobileAddChild;
+  $("mobileAddSurname").addEventListener("keydown", e=>{ if(e.key==="Enter") saveMobileAddChild(); });
+  $("mobileAddGroup").addEventListener("keydown", e=>{ if(e.key==="Enter") saveMobileAddChild(); });
 // when the coach switches back to this tab, pull the latest immediately
 document.addEventListener("visibilitychange", ()=>{ if (!document.hidden) silentRefresh(); });
 
