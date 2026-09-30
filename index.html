@@ -683,14 +683,34 @@ function monthKey(){ return state.month.y + "-" + String(state.month.m + 1).padS
 function dateKey(day){ return monthKey() + "-" + String(day).padStart(2,"0"); }
 
 /* ---------- compute session dates for the month ---------- */
+// Football academy schedule change: starting tomorrow (1 October 2026),
+// Football runs on Monday and Wednesday only. Dates before the change keep
+// the schedule that comes from the backend.
+const FOOTBALL_SCHEDULE_START = "2026-10-01";
+const FOOTBALL_WEEKDAYS = [1, 3]; // Monday=1, Wednesday=3
+
+function isFootballAcademy(){
+  const a = state.academy || {};
+  return String(a.key || "").toLowerCase().includes("football")
+      || String(a.name || "").toLowerCase().includes("football");
+}
+
+function effectiveWeekdaysForDate(dateStr){
+  if (isFootballAcademy() && dateStr >= FOOTBALL_SCHEDULE_START){
+    return FOOTBALL_WEEKDAYS;
+  }
+  return state.academy.weekdays || [];
+}
+
 function sessionDates(){
   const { y, m } = state.month;
-  const wk = state.academy.weekdays || [];
   const days = new Date(y, m+1, 0).getDate();
   const set = new Map(); // day -> {extra:bool}
   for (let d=1; d<=days; d++){
     const dow = new Date(y, m, d).getDay();
-    if (wk.indexOf(dow) !== -1) set.set(d, { extra:false });
+    const ds = `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const effectiveWk = effectiveWeekdaysForDate(ds);
+    if (effectiveWk.indexOf(dow) !== -1) set.set(d, { extra:false });
   }
   // merge one-off sessions returned by the server
   (state.data?.extraSessions || []).forEach(ds=>{
