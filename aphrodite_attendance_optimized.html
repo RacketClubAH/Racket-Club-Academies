@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#003087">
+<title>Aphrodite Hills — Academy Attendance</title>
+<link rel="apple-touch-icon" href="assets/aphrodite-logo-mple.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Geologica:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ───────────────────────────────────────────────
+     APHRODITE HILLS BRAND TOKENS
+     Mple #003087 · Bronze #8E7A6B · neutrals Foam/Shell/Pearl
+     Display: IvyPresto Headline → Playfair Display fallback
+     Body/UI: Geologica
+     Rule honoured: blue and bronze never sit directly on each
+     other — they only ever appear on light (foam/shell) fields.
+  ─────────────────────────────────────────────── */
+  :root{
+    --mple:#003087;
+    --mple-soft:rgba(0,48,135,.10);
+    --mple-line:rgba(0,48,135,.22);
+    --bronze:#8E7A6B;
+    --pearl:#CFCDC9;
+    --shell:#D6D1C3;
+    --foam:#F9F6F4;
+    --ink:#4d4d4d;          /* 70% black, per type spec */
+    --ink-soft:#7a7a78;
+    --line:#E4E0D8;
+    --paid:#4f7a4e;         /* muted "paid" green (status colour) */
+    --paid-soft:rgba(79,122,78,.14);
+    --danger:#9a4434;
+    --display:"IvyPresto Headline","Playfair Display",Georgia,serif;
+    --ui:"Geologica","Segoe UI",system-ui,-apple-system,sans-serif;
+    --radius:10px;
+    --shadow:0 1px 2px rgba(0,0,0,.04),0 8px 30px rgba(0,32,90,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;overflow-x:hidden}
+  body{
+    font-family:var(--ui);
+    color:var(--ink);
+    background:var(--foam);
+    -webkit-font-smoothing:antialiased;
+    line-height:1.45;
+  }
+  .eyebrow{
+    font-family:var(--ui);
+    text-transform:uppercase;
+    letter-spacing:.16em;
+    font-size:11px;
+    font-weight:500;
+    color:var(--bronze);
+  }
+  button{font-family:var(--ui);cursor:pointer}
+  .hidden{display:none !important}
+
+  /* ── LOGIN ─────────────────────────────────────── */
+  #loginView{
+    min-height:100dvh;
+    display:flex;align-items:center;justify-content:center;
+    padding:24px;
+  }
+  .login-card{
+    width:100%;max-width:380px;
+    background:#fff;border:1px solid var(--line);
+    border-radius:16px;box-shadow:var(--shadow);
+    padding:38px 32px 34px;text-align:center;
+  }
+  .login-card img.logo{height:84px;width:auto;margin-bottom:22px}
+  .login-card h1{
+    font-family:var(--display);
+    color:var(--mple);
+    font-weight:500;
+    font-size:25px;
+    line-height:1.2;
+    margin:0 0 4px;
+  }
+  .login-card .sub{font-size:13px;color:var(--ink-soft);margin:0 0 26px}
+  .field{text-align:left;margin-bottom:14px}
+  .field label{display:block;font-size:12px;letter-spacing:.04em;color:var(--ink-soft);margin-bottom:6px}
+  .field input{
+    width:100%;padding:12px 13px;font-size:15px;font-family:var(--ui);
+    color:var(--ink);background:var(--foam);
+    border:1px solid var(--pearl);border-radius:var(--radius);
+    transition:border-color .15s,background .15s;
+  }
+  .field input:focus{outline:none;border-color:var(--mple);background:#fff}
+  .btn-primary{
+    width:100%;margin-top:8px;padding:13px;
+    background:var(--mple);color:var(--foam);
+    border:none;border-radius:var(--radius);
+    font-size:15px;font-weight:500;letter-spacing:.02em;
+    transition:opacity .15s,transform .05s;
+  }
+  .btn-primary:hover{opacity:.92}
+  .btn-primary:active{transform:translateY(1px)}
+  .btn-primary[disabled]{opacity:.5;cursor:default}
+  .login-error{
+    color:var(--danger);font-size:13px;margin-top:14px;min-height:18px;
+  }
+  .login-rule{height:1px;background:var(--line);margin:24px 0 0}
+  .login-foot{font-size:11px;color:var(--ink-soft);margin-top:16px;letter-spacing:.03em}
+
+  /* ── APP SHELL ─────────────────────────────────── */
+  #appView{min-height:100dvh;display:flex;flex-direction:column}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:12px;padding:12px 18px;
+    background:#fff;border-bottom:1px solid var(--line);
+    position:sticky;top:0;z-index:20;
+  }
+  .topbar .brand{display:flex;align-items:center;gap:10px;min-width:0}
+  .topbar .brand img{height:34px;width:auto}
+  .topbar .brand .wm{font-family:var(--display);color:var(--mple);font-size:17px;white-space:nowrap}
+  .topbar .who{display:flex;align-items:center;gap:14px;font-size:13px;color:var(--ink-soft)}
+  .topbar .who b{color:var(--ink);font-weight:500}
+  .link-btn{background:none;border:none;color:var(--mple);font-size:13px;padding:6px 2px}
+  .link-btn:hover{text-decoration:underline}
+
+  .sheet{max-width:1180px;width:100%;margin:0 auto;padding:20px 18px 60px}
+
+  .head-row{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+  .title-block .eyebrow{margin-bottom:6px;display:block}
+  .title-block h2{
+    font-family:var(--display);color:var(--mple);font-weight:500;
+    font-size:30px;line-height:1.05;margin:0;
+  }
+  .title-block .meta{font-size:13px;color:var(--ink-soft);margin-top:4px}
+
+  /* academy switch */
+  .acad-switch{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 0}
+  .acad-chip{
+    padding:8px 14px;font-size:13px;border-radius:999px;
+    border:1px solid var(--mple-line);background:#fff;color:var(--mple);
+    transition:background .15s,color .15s;
+  }
+  .acad-chip[aria-pressed="true"]{background:var(--mple);color:var(--foam);border-color:var(--mple)}
+
+  /* controls bar */
+  .controls{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    margin:18px 0 14px;
+  }
+  .month-nav{display:flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px}
+  .month-nav button{
+    width:34px;height:34px;border-radius:50%;border:none;background:transparent;
+    color:var(--mple);font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;
+  }
+  .month-nav button:hover{background:var(--mple-soft)}
+  .month-nav .label{padding:0 10px;font-size:14px;font-weight:500;color:var(--ink);min-width:118px;text-align:center}
+  .synced{font-size:12px;color:var(--ink-soft);white-space:nowrap;margin-left:2px;align-self:center}
+  .synced.flash{color:var(--mple)}
+  .save-status{font-size:12px;color:var(--ink-soft);white-space:nowrap}
+  .save-status.pending{color:var(--danger);font-weight:500}
+  .save-status.saved{color:var(--paid)}
+  .save-btn{background:var(--mple);border-color:var(--mple);color:#fff;font-weight:500}
+  .save-btn:hover{background:#06409f;color:#fff}
+  .save-btn:disabled{opacity:.45;cursor:default}
+  .save-btn.saving{opacity:.7}
+  .spacer{flex:1}
+  .ghost-btn{
+    padding:9px 15px;font-size:13px;border-radius:var(--radius);
+    background:#fff;border:1px solid var(--mple-line);color:var(--mple);
+    display:inline-flex;align-items:center;gap:7px;transition:background .15s;
+  }
+  .ghost-btn:hover{background:var(--mple-soft)}
+  .ghost-btn[aria-pressed="true"]{background:var(--mple);color:var(--foam);border-color:var(--mple)}
+  .ghost-btn svg{width:15px;height:15px}
+
+  /* legend */
+  .legend{display:flex;gap:18px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--ink-soft);margin:0 0 12px}
+  .legend .item{display:flex;align-items:center;gap:7px}
+  .swatch{width:20px;height:20px;border-radius:6px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
+  .swatch.present{background:var(--mple-soft);border-color:var(--mple-line)}
+  .swatch.paid{background:var(--paid);border-color:var(--paid)}
+  .swatch svg{width:13px;height:13px}
+
+  /* ── GRID ──────────────────────────────────────── */
+  .grid-wrap{
+    background:#fff;border:1px solid var(--line);border-radius:14px;
+    overflow:auto;max-height:72dvh;box-shadow:var(--shadow);
+    -webkit-overflow-scrolling:touch;
+  }
+  table.grid{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%}
+  table.grid th,table.grid td{border-bottom:1px solid var(--line)}
+
+  /* header row */
+  table.grid thead th{
+    position:sticky;top:0;z-index:2;background:#fff;
+    padding:9px 6px;font-weight:500;color:var(--ink);
+    border-bottom:1.5px solid var(--shell);
+  }
+  thead th.col-date{min-width:50px;text-align:center}
+  thead th.col-date .dow{display:block;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft)}
+  thead th.col-date .dom{display:block;font-size:15px;line-height:1.1}
+  thead th.col-date.is-today .dom{color:var(--mple);font-weight:600}
+  thead th.col-date.is-today{box-shadow:inset 0 -3px 0 var(--bronze)}
+  thead th.col-date.is-extra .dow{color:var(--bronze)}
+
+  /* name column (sticky-left corner + cells) */
+  th.col-name,td.col-name{
+    position:sticky;left:0;z-index:1;background:#fff;
+    text-align:left;min-width:172px;max-width:210px;
+    padding:8px 12px 8px 14px;
+  }
+  thead th.col-name{z-index:3;border-bottom:1.5px solid var(--shell)}
+  td.col-name{border-right:1px solid var(--line)}
+  .grid-wrap.scrolled td.col-name,.grid-wrap.scrolled th.col-name{box-shadow:6px 0 12px -8px rgba(0,32,90,.18)}
+  td.col-name .idx{color:var(--ink-soft);font-size:11px;margin-right:8px;display:inline-block;min-width:16px}
+  td.col-name .nm{font-size:14px;color:var(--ink)}
+  td.col-name .gp{display:inline-block;margin-left:6px;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--bronze);vertical-align:middle}
+  tbody tr:nth-child(even) td.col-name,tbody tr:nth-child(even) td.cell{background:#FCFBF9}
+
+  /* attendance cells */
+  td.cell{padding:0;text-align:center}
+  td.cell button{
+    width:100%;min-width:50px;height:42px;border:none;background:transparent;
+    display:flex;align-items:center;justify-content:center;
+    border-left:1px solid var(--line);
+    transition:background .12s;
+  }
+  td.cell button:hover{background:var(--mple-soft)}
+  td.cell button .mark{width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+  td.cell button[data-state="1"] .mark{background:var(--mple-soft)}
+  td.cell button[data-state="1"] .mark svg{stroke:var(--mple)}
+  td.cell button[data-state="2"] .mark{background:var(--paid)}
+  td.cell button[data-state="2"] .mark svg{stroke:#fff}
+  td.cell button svg{width:15px;height:15px;fill:none;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+
+  /* football two-hour sessions: two ticks (hour 1 / hour 2) in one date cell */
+  td.cell.multi .pair{display:flex}
+  td.cell.multi .pair button{flex:1 1 0;min-width:33px;width:auto}
+  thead th.col-date .hrs{display:flex;justify-content:space-around;font-size:9px;color:var(--ink-soft);margin-top:2px;padding:0 3px}
+
+  /* remove handle (manage mode) */
+  .rm{
+    display:none;width:22px;height:22px;border-radius:50%;
+    border:1px solid var(--danger);color:var(--danger);background:#fff;
+    font-size:13px;line-height:1;margin-right:8px;vertical-align:middle;
+    align-items:center;justify-content:center;
+  }
+  body.managing .rm{display:inline-flex}
+  body.managing td.col-name .idx{display:none}
+
+  /* add-child row */
+  .add-row td{background:var(--foam);padding:12px 14px}
+  .add-form{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .add-form input{
+    padding:9px 11px;font-size:14px;font-family:var(--ui);
+    border:1px solid var(--pearl);border-radius:8px;background:#fff;color:var(--ink);
+  }
+  .add-form input.f-first{width:150px}
+  .add-form input.f-sur{width:160px}
+  .add-form input.f-grp{width:96px}
+  .add-form .mini{padding:9px 14px;font-size:13px;border-radius:8px;border:none;background:var(--mple);color:var(--foam)}
+  .add-form .mini.cancel{background:transparent;color:var(--ink-soft);border:1px solid var(--line)}
+
+  .empty-state{padding:40px 20px;text-align:center;color:var(--ink-soft);font-size:14px}
+
+  /* toast */
+  #toast{
+    position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);
+    background:var(--mple);color:var(--foam);font-size:13px;
+    padding:10px 18px;border-radius:999px;box-shadow:0 8px 24px rgba(0,32,90,.25);
+    opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:60;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast.err{background:var(--danger)}
+
+  /* loading veil */
+  .veil{position:absolute;inset:0;background:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center;z-index:5}
+  .veil .spin{width:26px;height:26px;border:3px solid var(--mple-soft);border-top-color:var(--mple);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  @media (max-width:560px){
+    .title-block h2{font-size:24px}
+    .topbar .brand .wm{display:none}
+    th.col-name,td.col-name{min-width:140px}
+    .who .role{display:none}
+  }
+
+
+  /* ── ADMIN SETTINGS ──────────────────────────────── */
+  .admin-only.hidden{display:none !important}
+  .settings-modal{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+  .settings-modal.hidden{display:none}
+  .settings-backdrop{position:absolute;inset:0;background:rgba(20,25,35,.42);backdrop-filter:blur(2px)}
+  .settings-card{position:relative;width:min(680px,100%);max-height:min(88dvh,760px);overflow:auto;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.18);padding:24px}
+  .settings-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:22px}
+  .settings-head h3{font-family:var(--display);color:var(--mple);font-size:27px;font-weight:500;margin:3px 0}
+  .settings-head p{font-size:13px;color:var(--ink-soft);margin:4px 0 0}
+  .settings-close{width:36px;height:36px;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--ink-soft);font-size:23px;line-height:1}
+  .academy-settings-list{display:flex;flex-direction:column;gap:12px}
+  .academy-setting{border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--foam)}
+  .academy-setting-title{font-family:var(--display);font-size:20px;color:var(--mple);margin-bottom:3px}
+  .academy-setting-info{font-size:11px;color:var(--ink-soft);margin-bottom:12px}
+  .weekday-row{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .weekday input{position:absolute;opacity:0;pointer-events:none}
+  .weekday label{display:flex;align-items:center;justify-content:center;min-height:42px;border:1px solid var(--mple-line);border-radius:9px;background:#fff;color:var(--mple);font-size:12px;font-weight:500;cursor:pointer;user-select:none}
+  .weekday input:checked + label{background:var(--mple);border-color:var(--mple);color:#fff}
+  .settings-foot{display:flex;justify-content:space-between;gap:15px;align-items:center;border-top:1px solid var(--line);margin-top:20px;padding-top:16px}
+  .mobile-add-label{display:none}
+  .mobile-add-fields{display:grid;gap:12px}
+  .mobile-add-fields .field{margin:0}
+  .mobile-add-fields .field label span{font-weight:400;color:var(--ink-soft)}
+  .mobile-add-actions{margin-top:20px}
+  .settings-note{font-size:11px;color:var(--ink-soft);max-width:320px}
+  .settings-actions{display:flex;gap:8px;align-items:center}
+  .settings-save{width:auto;margin:0;padding:10px 18px}
+  @media (max-width:700px){
+    .desktop-add-label{display:none}
+    .mobile-add-label{display:inline}
+
+    .settings-modal{padding:10px;align-items:flex-end}
+    .settings-card{max-height:92dvh;border-radius:18px 18px 10px 10px;padding:18px}
+    .weekday-row{grid-template-columns:repeat(7,1fr);gap:4px}
+    .weekday label{min-height:45px;font-size:10px}
+    .settings-foot{flex-direction:column;align-items:stretch}
+    .settings-note{max-width:none}
+    .settings-actions{display:grid;grid-template-columns:1fr 1fr}
+    .settings-actions button{width:100%}
+  }
+
+  /* ── MOBILE COACH MODE ───────────────────────────── */
+  .coach-panel{display:none}
+  .coach-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .coach-panel h3{font-family:var(--display);font-size:25px;font-weight:500;color:var(--mple);margin:2px 0;line-height:1.1}
+  .coach-session-meta{font-size:12px;color:var(--ink-soft)}
+  .coach-refresh{width:44px;height:44px;border-radius:50%;border:1px solid var(--mple-line);background:#fff;color:var(--mple);font-size:25px}
+  .coach-progress{display:flex;align-items:center;gap:10px;margin:16px 0 12px}
+  .coach-progress-bar{height:7px;background:var(--line);border-radius:99px;overflow:hidden;flex:1}
+  .coach-progress-bar span{display:block;height:100%;width:0;background:var(--paid);border-radius:99px;transition:width .2s}
+  .coach-progress>span{font-size:12px;color:var(--ink-soft);white-space:nowrap}
+  .coach-save{
+    width:100%;height:48px;border:0;border-radius:12px;background:var(--mple);color:#fff;
+    font:500 14px var(--ui);margin:0 0 12px;transition:opacity .15s,transform .05s
+  }
+  .coach-save:disabled{opacity:.35;cursor:default}
+  .coach-save:not(:disabled):active{transform:scale(.99)}
+  .coach-save.saving{opacity:.65}
+  .coach-search-wrap{margin-bottom:12px}
+  .coach-search{width:100%;height:46px;border:1px solid var(--pearl);border-radius:12px;background:#fff;padding:0 14px;font:14px var(--ui);color:var(--ink)}
+  .coach-search:focus{outline:none;border-color:var(--mple)}
+  .coach-list{display:flex;flex-direction:column;gap:8px}
+  .coach-player{display:flex;align-items:center;gap:10px;padding:10px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 2px 8px rgba(0,32,90,.04)}
+  .coach-player .avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--mple-soft);color:var(--mple);font-size:13px;font-weight:600;flex:0 0 auto}
+  .coach-player .player-info{min-width:0;flex:1}
+  .coach-player .player-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .coach-player .player-group{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--bronze);margin-top:1px}
+  .coach-attend{-webkit-tap-highlight-color:transparent;touch-action:manipulation;user-select:none;min-width:100px;height:44px;border-radius:11px;border:1px solid var(--mple-line);background:#fff;color:var(--mple);font:500 13px var(--ui)}
+  .coach-attend.present{background:var(--mple);border-color:var(--mple);color:#fff}
+  .coach-attend.paid{background:var(--paid);border-color:var(--paid);color:#fff}
+  .coach-empty{text-align:center;padding:28px 12px;color:var(--ink-soft);font-size:13px}
+
+  @media (max-width:700px){
+    .sheet{padding:14px 12px 34px}
+    .topbar{padding:10px 12px}
+    .topbar .brand img{height:30px}
+    .controls{margin:12px 0 10px}
+    .controls .month-nav,.controls .spacer,.controls #addSessionBtn,.controls #manageBtn,.controls #refreshBtn,.controls .synced,.controls #saveChangesBtn,.controls #saveStatus{display:none}
+    .acad-switch{margin:8px 0 12px;overflow:auto;flex-wrap:nowrap;padding-bottom:2px}
+    .acad-chip{white-space:nowrap;min-height:40px}
+    .legend{display:none}
+    .desktop-register{display:none}
+    .coach-panel{display:block}
+    #addChildBtn{margin-left:auto;min-height:40px}
+  }
+  @media (min-width:701px){#coachPanel{display:none !important}}
+
+  @media (prefers-reduced-motion:reduce){*{animation:none !important;transition:none !important}}
+</style>
+</head>
+<body>
+
+<!-- ───────── LOGIN ───────── -->
+<section id="loginView">
+  <div class="login-card">
+    <img class="logo" src="assets/aphrodite-logo-mple.png" alt="Aphrodite Hills">
+    <h1>Academy Attendance</h1>
+    <p class="sub">Sign in to your register</p>
+    <div class="field">
+      <label for="u">Username</label>
+      <input id="u" type="text" autocomplete="username" autocapitalize="none" spellcheck="false">
+    </div>
+    <div class="field">
+      <label for="p">Password</label>
+      <input id="p" type="password" autocomplete="current-password">
+    </div>
+    <button class="btn-primary" id="loginBtn">Sign in</button>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-rule"></div>
+    <div class="login-foot">Aphrodite Hills Racket &amp; Sports Academies</div>
+  </div>
+</section>
+
+<!-- ───────── APP ───────── -->
+<section id="appView" class="hidden">
+  <div class="topbar">
+    <div class="brand">
+      <img src="assets/aphrodite-logo-mple.png" alt="">
+      <span class="wm">Aphrodite Hills</span>
+    </div>
+    <div class="who">
+      <span><b id="coachName">—</b> <span class="role" id="coachRole"></span></span>
+      <button class="link-btn" id="signOut">Sign out</button>
+    </div>
+  </div>
+
+  <div class="sheet">
+    <div class="head-row">
+      <div class="title-block">
+        <span class="eyebrow">Attendance register</span>
+        <h2 id="acadTitle">—</h2>
+        <div class="meta" id="acadInfo"></div>
+      </div>
+    </div>
+
+    <div class="acad-switch" id="acadSwitch"></div>
+
+    <div class="controls">
+      <div class="month-nav">
+        <button id="prevMonth" aria-label="Previous month">‹</button>
+        <span class="label" id="monthLabel">—</span>
+        <button id="nextMonth" aria-label="Next month">›</button>
+      </div>
+      <div class="spacer"></div>
+      <button class="ghost-btn" id="addSessionBtn" title="Add a one-off session date">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Session
+      </button>
+      <button class="ghost-btn" id="addChildBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        <span class="desktop-add-label">Add child</span><span class="mobile-add-label">Add player</span>
+      </button>
+      <button class="ghost-btn" id="manageBtn" aria-pressed="false">Manage roster</button>
+      <button class="ghost-btn admin-only hidden" id="settingsBtn" title="Academy settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/>
+          <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 1.7-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V20h-2.4v-.2a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-1.7-1.7.06-.06A1.7 1.7 0 0 0 8.46 15a1.7 1.7 0 0 0-1.56-1.03H6.7v-2.4h.2A1.7 1.7 0 0 0 8.46 10a1.7 1.7 0 0 0-.34-1.88l-.06-.06 1.7-1.7.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 12.73 5.2V5h2.4v.2a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.7 1.7-.06.06a1.7 1.7 0 0 0-.34 1.88A1.7 1.7 0 0 0 20.96 11h.2v2.4h-.2A1.7 1.7 0 0 0 19.4 15Z"/>
+        </svg>
+        Settings
+      </button>
+      <button class="ghost-btn admin-only hidden save-btn" id="saveChangesBtn" disabled title="Save pending attendance changes">
+        Save changes
+      </button>
+      <span class="save-status" id="saveStatus" aria-live="polite">All changes saved</span>
+      <button class="ghost-btn" id="refreshBtn" title="Refresh the register now">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+        Refresh
+      </button>
+      <span class="synced" id="syncedLabel"></span>
+    </div>
+
+    <div class="legend">
+      <div class="item"><span class="swatch"></span> Absent</div>
+      <div class="item"><span class="swatch present"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span> Present</div>
+      <div class="item"><span class="swatch paid"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span> Present &amp; paid</div>
+      <div class="item" id="cellHint" style="color:var(--ink-soft)">Tap a cell to cycle</div>
+    </div>
+
+    <section class="coach-panel" id="coachPanel">
+      <div class="coach-panel-head">
+        <div>
+          <span class="eyebrow">Today</span>
+          <h3 id="coachSessionTitle">—</h3>
+          <div class="coach-session-meta" id="coachSessionMeta"></div>
+        </div>
+        <button class="coach-refresh" id="coachRefresh" aria-label="Refresh attendance">↻</button>
+      </div>
+      <div class="coach-progress">
+        <div class="coach-progress-bar"><span id="coachProgressBar"></span></div>
+        <span id="coachProgressText">0 / 0 present</span>
+      </div>
+      <button class="coach-save" id="coachSave" disabled>Save attendance</button>
+      <div class="coach-search-wrap">
+        <input id="coachSearch" class="coach-search" type="search" placeholder="Find a player…" autocomplete="off">
+      </div>
+      <div class="coach-list" id="coachList"></div>
+    </section>
+
+    <div class="grid-wrap desktop-register" id="gridWrap" style="position:relative">
+      <div class="veil" id="gridVeil"><div class="spin"></div></div>
+      <table class="grid" id="grid"></table>
+    </div>
+  </div>
+</section>
+
+
+<!-- ───────── ADMIN SETTINGS ───────── -->
+<section id="settingsModal" class="settings-modal hidden" aria-hidden="true">
+  <div class="settings-backdrop" id="settingsBackdrop"></div>
+  <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="settings-head">
+      <div>
+        <span class="eyebrow">Administration</span>
+        <h3 id="settingsTitle">Academy schedule</h3>
+        <p>Choose the regular days on which each academy runs.</p>
+      </div>
+      <button class="settings-close" id="settingsClose" aria-label="Close">×</button>
+    </div>
+
+    <div id="academySettingsList" class="academy-settings-list"></div>
+
+    <div class="settings-foot">
+      <span class="settings-note">Changes affect future attendance registers and mobile sessions.</span>
+      <div class="settings-actions">
+        <button class="ghost-btn" id="settingsCancel">Cancel</button>
+        <button class="btn-primary settings-save" id="settingsSave">Save settings</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MOBILE ADD PLAYER -->
+<section id="mobileAddModal" class="settings-modal hidden" aria-hidden="true">
+  <div class="settings-backdrop" id="mobileAddBackdrop"></div>
+  <div class="settings-card mobile-add-card" role="dialog" aria-modal="true">
+    <div class="settings-head">
+      <div>
+        <span class="eyebrow">Roster</span>
+        <h3>Add player</h3>
+        <p>Add a player directly to this academy's register.</p>
+      </div>
+      <button class="settings-close" id="mobileAddClose" aria-label="Close">×</button>
+    </div>
+    <div class="mobile-add-fields">
+      <div class="field"><label for="mobileAddFirst">First name</label><input id="mobileAddFirst" type="text" autocomplete="given-name"></div>
+      <div class="field"><label for="mobileAddSurname">Surname</label><input id="mobileAddSurname" type="text" autocomplete="family-name"></div>
+      <div class="field"><label for="mobileAddGroup">Group <span>(optional)</span></label><input id="mobileAddGroup" type="text" placeholder="e.g. U10"></div>
+    </div>
+    <div class="settings-actions mobile-add-actions">
+      <button class="ghost-btn" id="mobileAddCancel">Cancel</button>
+      <button class="btn-primary settings-save" id="mobileAddSave">Add player</button>
+    </div>
+  </div>
+</section>
+
+<div id="toast"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL BETWEEN THE QUOTES.
+   It must end in /exec  (see SETUP_GUIDE.md, step 4).
+   ════════════════════════════════════════════════════════════ */
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby42YyaXwPmrD6VDaKzMZlvNj0sy8qaRDjpSJuofWmq_NmzYCEpEWAId51G7Kq5b6mmzg/exec";
+
+/* ---------- tiny helpers ---------- */
+const $ = (id) => document.getElementById(id);
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>';
+
+let state = {
+  token: null,
+  displayName: "",
+  academies: [],       // [{key,name,weekdays,info}]
+  academy: null,       // current academy object
+  month: null,         // {y, m}  (m is 0-based)
+  data: null,
+  saving: 0,           // in-flight saves; auto-refresh pauses while > 0
+  lastSync: null,
+  isAdmin: false,      // reception accounts; only they can set the paid flag
+  dirtyAttendance: {}, // attendance changes waiting to be saved (mobile + reception)
+  loadRequestId: 0,     // ignores stale overlapping load responses
+  saveInProgress: false
+};
+let refreshTimer = null;
+
+function toast(msg, isErr){
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "show" + (isErr ? " err" : "");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=> t.className = "", 1900);
+}
+
+async function api(payload){
+  if (SCRIPT_URL.indexOf("PASTE_YOUR") === 0){
+    throw new Error("SCRIPT_URL not set in index.html");
+  }
+  const res = await fetch(SCRIPT_URL, {
+    method:"POST",
+    headers:{ "Content-Type":"text/plain;charset=utf-8" }, // avoids CORS preflight
+    body: JSON.stringify(payload)
+  });
+  return res.json();
+}
+
+/* ---------- session persistence ---------- */
+function saveSession(){
+  sessionStorage.setItem("ah_att", JSON.stringify({
+    token: state.token, displayName: state.displayName, academies: state.academies, isAdmin: state.isAdmin
+  }));
+}
+function loadSession(){
+  try{
+    const s = JSON.parse(sessionStorage.getItem("ah_att"));
+    if (s && s.token){ state.token = s.token; state.displayName = s.displayName; state.academies = s.academies; state.isAdmin = !!s.isAdmin; return true; }
+  }catch(e){}
+  return false;
+}
+function clearSession(){ sessionStorage.removeItem("ah_att"); }
+
+/* ---------- login ---------- */
+async function doLogin(){
+  const u = $("u").value.trim(), p = $("p").value;
+  $("loginError").textContent = "";
+  if (!u || !p){ $("loginError").textContent = "Enter your username and password."; return; }
+  $("loginBtn").disabled = true; $("loginBtn").textContent = "Signing in…";
+  try{
+    const r = await api({ action:"login", username:u, password:p });
+    if (!r.ok){
+      $("loginError").textContent = r.error === "invalid_credentials"
+        ? "That username or password isn't right." : "Couldn't sign in. Try again.";
+      return;
+    }
+    state.token = r.token; state.displayName = r.displayName; state.academies = r.academies || [];
+    state.isAdmin = !!r.admin;
+    saveSession();
+    enterApp();
+  }catch(err){
+    $("loginError").textContent = (err && err.message && err.message.indexOf("SCRIPT_URL") >= 0)
+      ? "This page isn't connected to the backend yet. Paste your web app /exec URL into the SCRIPT_URL line in index.html."
+      : "Connection problem. Check the page is connected and you're online, then try again.";
+    console.error(err);
+  }finally{
+    $("loginBtn").disabled = false; $("loginBtn").textContent = "Sign in";
+  }
+}
+
+/* ---------- app boot ---------- */
+function enterApp(){
+  $("loginView").classList.add("hidden");
+  $("appView").classList.remove("hidden");
+  $("coachPanel")?.classList.remove("hidden");
+  $("settingsBtn")?.classList.toggle("hidden", !state.isAdmin);
+  $("saveChangesBtn")?.classList.toggle("hidden", !state.isAdmin);
+  $("coachName").textContent = state.displayName || "Coach";
+  $("coachRole").textContent = state.isAdmin
+    ? "· Reception"
+    : (state.academies.length === 1 ? "· " + state.academies[0].name : "· " + state.academies.length + " academies");
+  $("cellHint").textContent = state.isAdmin ? "Tap a cell to cycle" : "Paid (green) is set by reception";
+
+  const now = new Date();
+  state.month = { y: now.getFullYear(), m: now.getMonth() };
+  state.academy = state.academies[0] || null;
+
+  renderAcademySwitch();
+  loadAndRender();
+  startAutoRefresh();
+}
+
+async function signOut(force = false){
+  if (!force && hasUnsavedAttendance()){
+    const choice = confirm("You have unsaved attendance changes. Press OK to save them before signing out, or Cancel to stay signed in.");
+    if (!choice) return;
+    const saved = await saveAttendanceChanges();
+    if (!saved) return;
+  }
+  if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+  clearSession();
+  state = { token:null, displayName:"", academies:[], academy:null, month:null, data:null, saving:0, lastSync:null, isAdmin:false, dirtyAttendance:{} };
+  $("appView").classList.add("hidden");
+  $("loginView").classList.remove("hidden");
+  $("p").value = "";
+  document.body.classList.remove("managing");
+  $("settingsModal")?.classList.add("hidden");
+  $("mobileAddModal")?.classList.add("hidden");
+  $("settingsModal")?.setAttribute("aria-hidden","true");
+  $("settingsBtn")?.classList.add("hidden");
+}
+
+/* ---------- academy switcher ---------- */
+function renderAcademySwitch(){
+  const wrap = $("acadSwitch");
+  if (state.academies.length <= 1){ wrap.innerHTML = ""; return; }
+  wrap.innerHTML = "";
+  state.academies.forEach(a=>{
+    const b = document.createElement("button");
+    b.className = "acad-chip";
+    b.textContent = a.name;
+    b.setAttribute("aria-pressed", a.key === state.academy.key ? "true" : "false");
+    b.onclick = async ()=>{
+      if (state.academy.key === a.key) return;
+      if (!(await protectUnsavedAttendance())) return;
+      state.academy = a;
+      renderAcademySwitch();
+      loadAndRender();
+    };
+    wrap.appendChild(b);
+  });
+}
+
+/* ---------- month nav ---------- */
+async function shiftMonth(delta){
+  if (!(await protectUnsavedAttendance())) return;
+  let m = state.month.m + delta, y = state.month.y;
+  if (m < 0){ m = 11; y--; } if (m > 11){ m = 0; y++; }
+  state.month = { y, m };
+  loadAndRender();
+}
+function monthKey(){ return state.month.y + "-" + String(state.month.m + 1).padStart(2,"0"); }
+function dateKey(day){ return monthKey() + "-" + String(day).padStart(2,"0"); }
+
+/* ---------- compute session dates for the month ---------- */
+// Football academy schedule change: starting tomorrow (1 October 2026),
+// Football runs on Monday and Wednesday only. Dates before the change keep
+// the schedule that comes from the backend.
+const FOOTBALL_SCHEDULE_START = "2026-10-01";
+const FOOTBALL_WEEKDAYS = [1, 3]; // Monday=1, Wednesday=3
+
+function isFootballAcademy(){
+  const a = state.academy || {};
+  return String(a.key || "").toLowerCase().includes("football")
+      || String(a.name || "").toLowerCase().includes("football");
+}
+
+function effectiveWeekdaysForDate(dateStr){
+  if (isFootballAcademy() && dateStr >= FOOTBALL_SCHEDULE_START){
+    return FOOTBALL_WEEKDAYS;
+  }
+  return state.academy.weekdays || [];
+}
+
+function sessionDates(){
+  const { y, m } = state.month;
+  const days = new Date(y, m+1, 0).getDate();
+  const set = new Map(); // day -> {extra:bool}
+  for (let d=1; d<=days; d++){
+    const dow = new Date(y, m, d).getDay();
+    const ds = `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const effectiveWk = effectiveWeekdaysForDate(ds);
+    if (effectiveWk.indexOf(dow) !== -1) set.set(d, { extra:false });
+  }
+  // merge one-off sessions returned by the server
+  (state.data?.extraSessions || []).forEach(ds=>{
+    const d = parseInt(ds.slice(-2),10);
+    if (!isNaN(d)) set.set(d, { extra: !set.has(d) ? true : set.get(d).extra });
+  });
+  return [...set.keys()].sort((a,b)=>a-b).map(d=>({ day:d, extra:set.get(d).extra }));
+}
+
+/* ---------- load + render ---------- */
+async function loadAndRender(silent){
+  if (!state.token || !state.academy || !state.month) return;
+  if (hasUnsavedAttendance() && !state.saveInProgress){
+    if (silent) return;
+    toast("Save attendance changes before refreshing", true);
+    return;
+  }
+  const requestId = ++state.loadRequestId;
+  $("acadTitle").textContent = state.academy ? state.academy.name : "—";
+  $("acadInfo").textContent  = state.academy && state.academy.info ? "Runs " + state.academy.info : "";
+  $("monthLabel").textContent = MONTHS[state.month.m] + " " + state.month.y;
+  if (!silent) $("gridVeil").style.display = "flex";
+  try{
+    const requestedAcademy = state.academy.key;
+    const requestedMonth = monthKey();
+    const r = await api({ action:"getData", token:state.token, academy:requestedAcademy, month:requestedMonth });
+    if (requestId !== state.loadRequestId || !state.academy || state.academy.key !== requestedAcademy || monthKey() !== requestedMonth) return;
+    if (r.error === "session_expired"){ toast("Session expired — sign in again", true); signOut(); return; }
+    if (!r.ok){ if(!silent) toast("Couldn't load the register", true); return; }
+    state.data = r;
+    state.lastSync = new Date();
+    renderGrid();
+    renderCoachPanel();
+    updateSynced();
+    updateSaveStatus();
+  }catch(err){
+    if(!silent) toast("Connection problem", true); console.error(err);
+  }finally{
+    if (!silent) $("gridVeil").style.display = "none";
+  }
+}
+
+function updateSynced(){
+  const el = $("syncedLabel"); if (!el || !state.lastSync) return;
+  const hh = String(state.lastSync.getHours()).padStart(2,"0");
+  const mm = String(state.lastSync.getMinutes()).padStart(2,"0");
+  el.textContent = "Synced " + hh + ":" + mm;
+  el.classList.add("flash");
+  clearTimeout(updateSynced._t);
+  updateSynced._t = setTimeout(()=> el.classList.remove("flash"), 600);
+}
+
+/* ---------- live refresh: keep the board current for everyone ---------- */
+function silentRefresh(){
+  if (document.hidden) return;          // don't poll a backgrounded tab
+  if (state.saving > 0 || state.saveInProgress) return;
+  if (!state.token || !state.academy) return;
+  if (hasUnsavedAttendance()) return; // never replace local unsaved edits
+  // Coaches on phones work offline-first during the session and explicitly save
+  // when finished. Do not overwrite their local checklist with polling.
+  if (window.matchMedia && window.matchMedia("(max-width:700px)").matches && !state.isAdmin) return;
+  if (document.body.classList.contains("managing")) return; // not mid roster edit
+  if ($("addRow") && !$("addRow").classList.contains("hidden")) return; // not mid add
+  loadAndRender(true);
+}
+function startAutoRefresh(){
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(silentRefresh, 30000); // refresh every 30s instead of rebuilding every 5s
+}
+
+function renderGrid(){
+  const grid = $("grid");
+  const dates = sessionDates();
+  const slots = state.academy.slots || 1;
+  const kids = state.data.children || [];
+  const att = state.data.attendance || {};
+  const todayK = (()=>{ const n=new Date(); return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0"); })();
+
+  // header
+  let html = "<thead><tr><th class='col-name'>Name</th>";
+  dates.forEach(({day,extra})=>{
+    const k = dateKey(day);
+    const dow = DOW[new Date(state.month.y, state.month.m, day).getDay()];
+    const cls = "col-date" + (k===todayK ? " is-today":"") + (extra ? " is-extra":"");
+    const hrs = slots>1 ? `<span class='hrs'><span>1</span><span>2</span></span>` : "";
+    html += `<th class='${cls}'><span class='dow'>${dow}</span><span class='dom'>${day}</span>${hrs}</th>`;
+  });
+  html += "</tr></thead><tbody>";
+
+  if (!kids.length){
+    html += `<tr><td class='col-name'></td><td colspan='${Math.max(dates.length,1)}'><div class='empty-state'>No children yet. Use “Add child” to build the list.</div></td></tr>`;
+  }
+
+  kids.forEach((kid,i)=>{
+    const nm = ((kid.first||"")+" "+(kid.surname||"")).trim();
+    const grp = kid.group ? `<span class='gp'>${escapeHtml(kid.group)}</span>` : "";
+    html += "<tr data-child='"+kid.id+"'>";
+    html += `<td class='col-name'>`
+          + `<button class='rm' title='Remove' data-rm='${kid.id}' data-nm="${escapeAttr(nm)}">×</button>`
+          + `<span class='idx'>${i+1}</span><span class='nm'>${escapeHtml(nm)}</span>${grp}</td>`;
+    dates.forEach(({day})=>{
+      const dk = dateKey(day);
+      if (slots > 1){
+        let inner = "";
+        for (let s=1; s<=slots; s++){
+          const k = kid.id + "|" + dk + (s>1 ? "|"+s : "");
+          const rec = att[k] || { present:false, paid:false };
+          const st = rec.paid ? 2 : (rec.present ? 1 : 0);
+          inner += `<button data-child='${kid.id}' data-date='${dk}' data-slot='${s}' data-state='${st}'><span class='mark'>${st? CHECK : ""}</span></button>`;
+        }
+        html += `<td class='cell multi'><div class='pair'>${inner}</div></td>`;
+      } else {
+        const k = kid.id + "|" + dk;
+        const rec = att[k] || { present:false, paid:false };
+        const st = rec.paid ? 2 : (rec.present ? 1 : 0);
+        html += `<td class='cell'><button data-child='${kid.id}' data-date='${dk}' data-slot='1' data-state='${st}'><span class='mark'>${st? CHECK : ""}</span></button></td>`;
+      }
+    });
+    html += "</tr>";
+  });
+
+  // add-child inline form (hidden until toggled)
+  html += `<tr class='add-row hidden' id='addRow'><td class='col-name'></td>
+    <td colspan='${Math.max(dates.length,1)}'>
+      <div class='add-form'>
+        <input class='f-first' id='nf' placeholder='First name'>
+        <input class='f-sur' id='ns' placeholder='Surname'>
+        <input class='f-grp' id='ng' placeholder='Group (opt)'>
+        <button class='mini' id='nAdd'>Add</button>
+        <button class='mini cancel' id='nCancel'>Cancel</button>
+      </div>
+    </td></tr>`;
+
+  html += "</tbody>";
+  grid.innerHTML = html;
+
+  // One delegated listener handles all cells and survives table re-renders.
+  grid.onclick = e => {
+    const btn = e.target.closest("td.cell button");
+    if (btn && grid.contains(btn)) cycleCell(btn);
+  };
+  // wire remove handles
+  grid.querySelectorAll(".rm").forEach(b=> b.onclick = ()=> removeChild(b.dataset.rm, b.dataset.nm));
+  // wire add-form
+  $("nAdd").onclick = addChild;
+  $("nCancel").onclick = ()=>{ $("addRow").classList.add("hidden"); };
+  $("ns").addEventListener("keydown", e=>{ if(e.key==="Enter") addChild(); });
+  renderCoachPanel();
+}
+
+
+
+/* ---------- mobile coach add-player flow ---------- */
+function openMobileAddChild(){
+  if (!state.academy) return;
+  $("mobileAddFirst").value = "";
+  $("mobileAddSurname").value = "";
+  $("mobileAddGroup").value = "";
+  $("mobileAddModal").classList.remove("hidden");
+  $("mobileAddModal").setAttribute("aria-hidden","false");
+  setTimeout(()=> $("mobileAddFirst").focus(), 50);
+}
+function closeMobileAddChild(){
+  $("mobileAddModal").classList.add("hidden");
+  $("mobileAddModal").setAttribute("aria-hidden","true");
+}
+async function saveMobileAddChild(){
+  if (!state.academy) return;
+  const first = $("mobileAddFirst").value.trim();
+  const surname = $("mobileAddSurname").value.trim();
+  const group = $("mobileAddGroup").value.trim();
+  if (!first && !surname){
+    toast("Add a name first", true);
+    $("mobileAddFirst").focus();
+    return;
+  }
+  const btn = $("mobileAddSave");
+  btn.disabled = true;
+  btn.textContent = "Adding…";
+  try{
+    const r = await api({
+      action:"addChild",
+      token:state.token,
+      academy:state.academy.key,
+      first, surname, group
+    });
+    if (r.error === "session_expired"){ signOut(); return; }
+    if (!r.ok) throw new Error(r.error || "Couldn't add player");
+    closeMobileAddChild();
+    toast("Added " + (first || surname));
+
+    // Add the new player directly to the current mobile list.
+    // No full register reload is needed, so the coach can mark them immediately.
+    const newChild = r.child || r.newChild || {
+      id: r.childId || r.id || ("local-" + Date.now()),
+      first,
+      surname,
+      group
+    };
+
+    if (!Array.isArray(state.data.children)) state.data.children = [];
+    const exists = state.data.children.some(c => String(c.id) === String(newChild.id));
+    if (!exists){
+      state.data.children.push({
+        id: newChild.id,
+        first: newChild.first ?? first,
+        surname: newChild.surname ?? surname,
+        group: newChild.group ?? group
+      });
+    }
+
+    // Start the new player as Absent for today's session.
+    // This creates the visible button without touching the server attendance yet.
+    const today = todayKey();
+    const slots = state.academy.slots || 1;
+    state.data.attendance = state.data.attendance || {};
+    for(let slot=1; slot<=slots; slot++){
+      const key = newChild.id + "|" + today + (slot > 1 ? "|" + slot : "");
+      if (!state.data.attendance[key]){
+        state.data.attendance[key] = {present:false, paid:false};
+      }
+    }
+
+    renderCoachPanel();
+
+    // Put the newly added player at the bottom and scroll to them.
+    requestAnimationFrame(() => {
+      const rows = [...$("coachList").querySelectorAll(".coach-player")];
+      const row = rows.find(el =>
+        el.querySelector(`[data-coach-child="${CSS.escape(String(newChild.id))}"]`)
+      );
+      row?.scrollIntoView({behavior:"smooth", block:"center"});
+    });
+  }catch(err){
+    console.error(err);
+    toast(err.message || "Couldn't add player — try again", true);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "Add player";
+  }
+}
+
+/* ---------- admin academy schedule settings ---------- */
+const DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const DAY_SHORT = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+function openSettings(){
+  if (!state.isAdmin) return;
+  const list = $("academySettingsList");
+  list.innerHTML = "";
+
+  (state.academies || []).forEach((academy, index) => {
+    const selected = Array.isArray(academy.weekdays) ? academy.weekdays : [];
+    const row = document.createElement("div");
+    row.className = "academy-setting";
+    row.dataset.academyKey = academy.key;
+
+    row.innerHTML = `
+      <div class="academy-setting-title">${escapeHtml(academy.name || academy.key)}</div>
+      <div class="academy-setting-info">${escapeHtml(academy.info || "Regular academy schedule")}</div>
+      <div class="weekday-row">
+        ${DAY_SHORT.map((d, day) => `
+          <div class="weekday">
+            <input type="checkbox" id="set-${index}-${day}" data-day="${day}" ${selected.indexOf(day) >= 0 ? "checked" : ""}>
+            <label for="set-${index}-${day}" title="${DAY_NAMES[day]}">${d}</label>
+          </div>
+        `).join("")}
+      </div>`;
+    list.appendChild(row);
+  });
+
+  $("settingsModal").classList.remove("hidden");
+  $("settingsModal").setAttribute("aria-hidden","false");
+}
+
+function closeSettings(){
+  $("settingsModal").classList.add("hidden");
+  $("settingsModal").setAttribute("aria-hidden","true");
+}
+
+async function saveSettings(){
+  if (!state.isAdmin) return;
+
+  const rows = [...$("academySettingsList").querySelectorAll(".academy-setting")];
+  const schedules = rows.map(row => ({
+    key: row.dataset.academyKey,
+    weekdays: [...row.querySelectorAll("input:checked")].map(x => Number(x.dataset.day))
+  }));
+
+  if (schedules.some(x => !x.weekdays.length)){
+    toast("Each academy needs at least one day", true);
+    return;
+  }
+
+  const btn = $("settingsSave");
+  btn.disabled = true;
+  btn.textContent = "Saving…";
+
+  try{
+    /*
+      Backend action required:
+      { action:"updateAcademySchedules", token, schedules:[{key,weekdays:[0..6]}] }
+      The backend must verify the session is an admin before writing.
+    */
+    const r = await api({
+      action:"updateAcademySchedules",
+      token:state.token,
+      schedules
+    });
+
+    if (r.error === "session_expired"){ signOut(); return; }
+    if (!r.ok) throw new Error(r.error || "failed");
+
+    // Use server-returned academies if supplied; otherwise update the local
+    // academy objects from the saved schedule.
+    if (Array.isArray(r.academies)){
+      state.academies = r.academies;
+    }else{
+      schedules.forEach(s => {
+        const a = state.academies.find(x => x.key === s.key);
+        if (a) a.weekdays = s.weekdays;
+      });
+    }
+
+    saveSession();
+    renderAcademySwitch();
+    closeSettings();
+
+    // Reload the currently selected academy so the new days are reflected
+    // immediately in the monthly register.
+    await loadAndRender();
+    toast("Academy schedules updated");
+  }catch(err){
+    toast("Couldn't save settings — backend update required", true);
+    console.error(err);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = "Save settings";
+  }
+}
+
+/* ---------- mobile coach view ---------- */
+function todayKey(){
+  const n = new Date();
+  return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0");
+}
+
+function updateCoachProgress(){
+  if (!state.academy || !state.data) return;
+  const today = todayKey();
+  const slots = state.academy.slots || 1;
+  const kids = state.data.children || [];
+  const att = state.data.attendance || {};
+
+  let presentCount = 0;
+  kids.forEach(k => {
+    for(let s=1;s<=slots;s++){
+      const key = k.id + "|" + today + (s > 1 ? "|" + s : "");
+      if (att[key]?.present) presentCount++;
+    }
+  });
+
+  const denominator = kids.length * slots;
+  const pct = denominator ? Math.round(presentCount / denominator * 100) : 0;
+  if ($("coachProgressText")) $("coachProgressText").textContent = `${presentCount} / ${denominator} present`;
+  if ($("coachProgressBar")) $("coachProgressBar").style.width = pct + "%";
+
+  updateSaveStatus();
+}
+
+function hasUnsavedAttendance(){
+  return Object.keys(state.dirtyAttendance || {}).length > 0;
+}
+
+function updateSaveStatus(){
+  const count = Object.keys(state.dirtyAttendance || {}).length;
+  const status = $("saveStatus");
+  const button = $("saveChangesBtn");
+  if (status){
+    status.classList.toggle("pending", count > 0);
+    status.classList.toggle("saved", count === 0);
+    status.textContent = state.saveInProgress
+      ? "Saving changes…"
+      : count ? `${count} unsaved change${count === 1 ? "" : "s"}` : "All changes saved";
+  }
+  if (button){
+    button.disabled = count === 0 || state.saveInProgress;
+    button.classList.toggle("saving", state.saveInProgress);
+    button.textContent = state.saveInProgress ? "Saving…" : count ? `Save changes · ${count}` : "Save changes";
+  }
+  const coachSave = $("coachSave");
+  if (coachSave){
+    // The coach panel's queue contains today's records. Reception's desktop
+    // button shares the same queue, so keep the mobile button state accurate too.
+    coachSave.disabled = count === 0 || state.saveInProgress;
+    coachSave.classList.toggle("saving", state.saveInProgress);
+    coachSave.textContent = state.saveInProgress ? "Saving attendance…" : count
+      ? `Save attendance · ${count} change${count === 1 ? "" : "s"}`
+      : "Attendance saved";
+  }
+}
+
+async function protectUnsavedAttendance(){
+  if (!hasUnsavedAttendance()) return true;
+  const shouldSave = confirm("You have unsaved attendance changes. Press OK to save before continuing, or Cancel to stay on this register.");
+  if (!shouldSave) return false;
+  return await saveAttendanceChanges();
+}
+
+async function saveAttendanceChanges(){
+  if (state.saveInProgress) return false;
+  const entries = Object.entries(state.dirtyAttendance || {});
+  if (!entries.length){ updateSaveStatus(); return true; }
+
+  state.saveInProgress = true;
+  updateSaveStatus();
+  let successes = 0;
+  let failures = 0;
+  let sessionExpired = false;
+  try{
+    // Existing Apps Script backend supports setAttendance per record, not a
+    // batch action. Send small concurrent groups to reduce overhead without
+    // flooding Apps Script with one request per click.
+    const batchSize = 5;
+    for (let i = 0; i < entries.length; i += batchSize){
+      const batch = entries.slice(i, i + batchSize);
+      const results = await Promise.allSettled(batch.map(async ([key, item]) => {
+        const rec = state.data?.attendance?.[key] || {present:false,paid:false};
+        const sent = { present:!!rec.present, paid:!!rec.paid };
+        const r = await api({
+          action:"setAttendance", token:state.token, academy:state.academy.key,
+          childId:item.childId, date:item.date, slot:item.slot,
+          present:sent.present, paid:sent.paid
+        });
+        if (r.error === "session_expired") throw new Error("session_expired");
+        if (!r.ok) throw new Error(r.error || "failed");
+        return {key, item, sent, paid:typeof r.paid === "boolean" ? r.paid : sent.paid};
+      }));
+
+      results.forEach(result => {
+        if (result.status !== "fulfilled"){
+          failures++;
+          if (result.reason?.message === "session_expired") sessionExpired = true;
+          console.error(result.reason);
+          return;
+        }
+        successes++;
+        const {key, item, sent, paid} = result.value;
+        const current = state.data?.attendance?.[key];
+        const latest = state.dirtyAttendance[key];
+        if (!latest) {
+          if (current) current.paid = paid;
+          return;
+        }
+        // If the cell still matches what we sent, reconcile with the server and
+        // clear it. If it changed during the request, preserve that newer edit.
+        const stillMatchesSent = current && !!current.present === !!sent.present && !!current.paid === !!sent.paid;
+        if (stillMatchesSent){
+          current.paid = paid;
+          delete state.dirtyAttendance[key];
+        }else{
+          latest.original = {present:sent.present, paid};
+        }
+      });
+      if (sessionExpired) break;
+    }
+
+    if (sessionExpired){
+      toast("Session expired — sign in again", true);
+      // Keep queued edits if sign-out is cancelled; session is no longer valid.
+      await signOut(true);
+      return false;
+    }
+
+    if (failures){
+      toast(`${successes} saved; ${failures} failed. Retry unsaved changes.`, true);
+      return false;
+    }
+    toast("Attendance saved");
+    return !hasUnsavedAttendance();
+  }catch(err){
+    console.error(err);
+    toast("Couldn't save attendance — changes are still pending", true);
+    return false;
+  }finally{
+    state.saveInProgress = false;
+    updateSaveStatus();
+    renderCoachPanel();
+    // Update only the affected cell indicators; do not rebuild the whole grid.
+    document.querySelectorAll("#grid td.cell button").forEach(btn => {
+      const key = btn.dataset.child + "|" + btn.dataset.date + (Number(btn.dataset.slot || 1) > 1 ? "|" + btn.dataset.slot : "");
+      const rec = state.data?.attendance?.[key] || {present:false,paid:false};
+      const status = rec.paid ? 2 : rec.present ? 1 : 0;
+      btn.dataset.state = String(status);
+      const mark = btn.querySelector(".mark");
+      if (mark) mark.innerHTML = status ? CHECK : "";
+    });
+  }
+}
+
+async function saveCoachAttendance(){
+  await saveAttendanceChanges();
+}
+
+function renderCoachPanel(){
+  if (!$("coachPanel") || !state.academy || !state.data) return;
+
+  const today = todayKey();
+  const hasToday = sessionDates().some(d => dateKey(d.day) === today);
+  const slots = state.academy.slots || 1;
+  const kids = state.data.children || [];
+  const att = state.data.attendance || {};
+
+  $("coachSessionTitle").textContent = hasToday ? "Today's session" : "No session today";
+  $("coachSessionMeta").textContent = hasToday
+    ? (slots > 1 ? "Tap to mark attendance · 2-hour session" : "Tap to mark attendance")
+    : "The next scheduled session will appear here.";
+
+  if (!hasToday){
+    $("coachList").innerHTML = '<div class="coach-empty">No academy session is scheduled for today.</div>';
+    $("coachProgressText").textContent = "0 / 0 present";
+    $("coachProgressBar").style.width = "0%";
+    return;
+  }
+
+  const search = (($("coachSearch")?.value || "").trim().toLowerCase());
+  const visibleKids = kids.filter(k => {
+    const name = ((k.first||"")+" "+(k.surname||"")).trim().toLowerCase();
+    return !search || name.includes(search);
+  });
+
+  const recordFor = (kid, slot) => {
+    const key = kid.id + "|" + today + (slot > 1 ? "|" + slot : "");
+    return att[key] || {present:false,paid:false};
+  };
+
+  let presentCount = 0;
+  kids.forEach(k => { for(let s=1;s<=slots;s++) if(recordFor(k,s).present) presentCount++; });
+  const denominator = kids.length * slots;
+  $("coachProgressText").textContent = `${presentCount} / ${denominator} present`;
+  $("coachProgressBar").style.width = (denominator ? Math.round(presentCount/denominator*100) : 0) + "%";
+
+  if (!visibleKids.length){
+    $("coachList").innerHTML = '<div class="coach-empty">No players match your search.</div>';
+    return;
+  }
+
+  $("coachList").innerHTML = visibleKids.map(k => {
+    const name = ((k.first||"")+" "+(k.surname||"")).trim();
+    const initials = ((k.first||"").charAt(0)+(k.surname||"").charAt(0)).toUpperCase() || "?";
+    const group = k.group ? `<div class="player-group">${escapeHtml(k.group)}</div>` : "";
+
+    if (slots > 1){
+      let buttons = "";
+      for(let s=1;s<=slots;s++){
+        const r = recordFor(k,s);
+        const cls = r.paid ? "paid" : (r.present ? "present" : "");
+        buttons += `<button class="coach-attend ${cls}" data-coach-child="${escapeAttr(k.id)}" data-coach-slot="${s}">${r.present ? "Hour "+s+" ✓" : "Hour "+s}</button>`;
+      }
+      return `<div class="coach-player"><div class="avatar">${initials}</div><div class="player-info"><div class="player-name">${escapeHtml(name)}</div>${group}</div><div style="display:flex;gap:5px">${buttons}</div></div>`;
+    }
+
+    const r = recordFor(k,1);
+    const cls = r.paid ? "paid" : (r.present ? "present" : "");
+    return `<div class="coach-player"><div class="avatar">${initials}</div><div class="player-info"><div class="player-name">${escapeHtml(name)}</div>${group}</div><button class="coach-attend ${cls}" data-coach-child="${escapeAttr(k.id)}" data-coach-slot="1">${r.present ? "Present ✓" : "Absent"}</button></div>`;
+  }).join("");
+
+  $("coachList").querySelectorAll("[data-coach-child]").forEach(btn => {
+    btn.onclick = () => cycleCoachAttendance(btn);
+  });
+}
+
+function cycleCoachAttendance(btn){
+  const childId = btn.dataset.coachChild;
+  const slot = parseInt(btn.dataset.coachSlot || "1",10);
+  const today = todayKey();
+  const att = state.data.attendance || {};
+  const key = childId + "|" + today + (slot > 1 ? "|" + slot : "");
+  const oldRec = {...(att[key] || {present:false,paid:false})};
+
+  if (oldRec.paid && !state.isAdmin){
+    toast("Only reception can change paid");
+    return;
+  }
+
+  const next = {...oldRec, present:!oldRec.present};
+  if (!next.present) next.paid = false;
+
+  // Change is LOCAL and instantaneous. Nothing is sent to the server here.
+  att[key] = next;
+  state.data.attendance = att;
+
+  // Remember the original server value so Save can send only actual changes.
+  if (!state.dirtyAttendance[key]){
+    state.dirtyAttendance[key] = {
+      childId, date:today, slot,
+      original:{...oldRec}
+    };
+  }
+
+  // If the coach toggles back to the original state, there is nothing to save.
+  const original = state.dirtyAttendance[key].original;
+  if (!!next.present === !!original.present && !!next.paid === !!original.paid){
+    delete state.dirtyAttendance[key];
+  }
+
+  // Update ONLY this button immediately — no list redraw and no network request.
+  btn.classList.toggle("present", next.present && !next.paid);
+  btn.classList.toggle("paid", !!next.paid);
+  btn.textContent = next.present
+    ? (slot > 1 ? "Hour " + slot + " ✓" : "Present ✓")
+    : (slot > 1 ? "Hour " + slot : "Absent");
+
+  updateCoachProgress();
+}
+
+/* ---------- cell cycle: local-only absent → present → paid → absent ---------- */
+function cycleCell(btn){
+  const childId = btn.dataset.child;
+  const date = btn.dataset.date;
+  const slot = parseInt(btn.dataset.slot || "1", 10);
+  const key = childId + "|" + date + (slot > 1 ? "|" + slot : "");
+  const current = state.data?.attendance?.[key] || {present:false,paid:false};
+  const cur = current.paid ? 2 : current.present ? 1 : 0;
+
+  let next;
+  if (state.isAdmin){
+    next = (cur + 1) % 3; // absent -> present -> paid -> absent
+  }else{
+    if (cur === 2){ toast("Only reception can change paid"); return; }
+    next = cur === 0 ? 1 : 0;
+  }
+  const nextRec = {present:next >= 1, paid:next === 2};
+
+  if (!state.dirtyAttendance[key]){
+    state.dirtyAttendance[key] = {
+      childId, date, slot,
+      original:{present:!!current.present, paid:!!current.paid}
+    };
+  }
+  state.data.attendance = state.data.attendance || {};
+  state.data.attendance[key] = nextRec;
+
+  const original = state.dirtyAttendance[key].original;
+  if (!!nextRec.present === !!original.present && !!nextRec.paid === !!original.paid){
+    delete state.dirtyAttendance[key];
+  }
+
+  // Update only the tapped cell; do not send a request or rebuild the grid.
+  btn.dataset.state = String(next);
+  const mark = btn.querySelector(".mark");
+  if (mark) mark.innerHTML = next ? CHECK : "";
+  updateSaveStatus();
+}
+
+/* ---------- add / remove child ---------- */
+function openAddChild(){
+  const row = $("addRow"); if (!row) return;
+  row.classList.remove("hidden");
+  $("nf").focus();
+  row.scrollIntoView({ block:"nearest", behavior:"smooth" });
+}
+async function addChild(){
+  const first = $("nf").value.trim(), surname = $("ns").value.trim(), group = $("ng").value.trim();
+  if (!first && !surname){ toast("Add a name first", true); $("nf").focus(); return; }
+  try{
+    const r = await api({ action:"addChild", token:state.token, academy:state.academy.key, first, surname, group });
+    if (r.error === "session_expired"){ signOut(); return; }
+    if (!r.ok) throw new Error(r.error);
+    toast("Added " + (first||surname));
+    await loadAndRender();
+  }catch(err){ toast("Couldn't add — try again", true); console.error(err); }
+}
+async function removeChild(id, nm){
+  if (!confirm("Remove " + (nm||"this child") + " from the list?\n\nPast attendance stays recorded.")) return;
+  try{
+    const r = await api({ action:"removeChild", token:state.token, childId:id });
+    if (r.error === "session_expired"){ signOut(); return; }
+    if (!r.ok) throw new Error(r.error);
+    toast("Removed");
+    await loadAndRender();
+  }catch(err){ toast("Couldn't remove — try again", true); console.error(err); }
+}
+
+/* ---------- add one-off session ---------- */
+async function addSession(){
+  const def = monthKey() + "-15";
+  const input = prompt("Add a one-off session date for " + MONTHS[state.month.m] + " " + state.month.y +
+    ".\n\nEnter the day of the month (1–31):", "");
+  if (input === null) return;
+  const day = parseInt(input,10);
+  const maxDay = new Date(state.month.y, state.month.m+1, 0).getDate();
+  if (isNaN(day) || day < 1 || day > maxDay){ toast("Enter a day between 1 and " + maxDay, true); return; }
+  try{
+    const r = await api({ action:"addSession", token:state.token, academy:state.academy.key, date:dateKey(day) });
+    if (r.error === "session_expired"){ signOut(); return; }
+    if (!r.ok) throw new Error(r.error);
+    toast("Session added");
+    await loadAndRender();
+  }catch(err){ toast("Couldn't add session", true); console.error(err); }
+}
+
+/* ---------- manage mode ---------- */
+function toggleManage(){
+  const on = document.body.classList.toggle("managing");
+  $("manageBtn").setAttribute("aria-pressed", on ? "true":"false");
+  $("manageBtn").textContent = on ? "Done" : "Manage roster";
+}
+
+/* ---------- misc ---------- */
+function escapeHtml(s){ return String(s).replace(/[&<>]/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c])); }
+function escapeAttr(s){ return String(s).replace(/"/g,"&quot;"); }
+
+/* scroll shadow on name column */
+$("gridWrap").addEventListener("scroll", function(){
+  this.classList.toggle("scrolled", this.scrollLeft > 2);
+});
+
+/* ---------- wire static controls ---------- */
+$("loginBtn").onclick = doLogin;
+$("p").addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
+$("u").addEventListener("keydown", e=>{ if(e.key==="Enter") $("p").focus(); });
+$("signOut").onclick = ()=> signOut();
+$("prevMonth").onclick = ()=> shiftMonth(-1);
+$("nextMonth").onclick = ()=> shiftMonth(1);
+$("addChildBtn").onclick = ()=>{
+  if (window.matchMedia && window.matchMedia("(max-width:700px)").matches) openMobileAddChild();
+  else openAddChild();
+};
+$("addSessionBtn").onclick = addSession;
+$("manageBtn").onclick = toggleManage;
+$("refreshBtn").onclick = async ()=>{
+  if (!(await protectUnsavedAttendance())) return;
+  await loadAndRender();
+};
+$("saveChangesBtn").onclick = saveAttendanceChanges;
+  $("coachRefresh").onclick = async ()=>{
+    if (!(await protectUnsavedAttendance())) return;
+    await loadAndRender();
+  };
+  $("coachSave").onclick = saveCoachAttendance;
+  $("coachSearch").addEventListener("input", renderCoachPanel);
+  $("settingsBtn").onclick = openSettings;
+  $("settingsClose").onclick = closeSettings;
+  $("settingsCancel").onclick = closeSettings;
+  $("settingsBackdrop").onclick = closeSettings;
+  $("settingsSave").onclick = saveSettings;
+  $("mobileAddClose").onclick = closeMobileAddChild;
+  $("mobileAddCancel").onclick = closeMobileAddChild;
+  $("mobileAddBackdrop").onclick = closeMobileAddChild;
+  $("mobileAddSave").onclick = saveMobileAddChild;
+  $("mobileAddSurname").addEventListener("keydown", e=>{ if(e.key==="Enter") saveMobileAddChild(); });
+  $("mobileAddGroup").addEventListener("keydown", e=>{ if(e.key==="Enter") saveMobileAddChild(); });
+// when the coach switches back to this tab, pull the latest immediately
+document.addEventListener("visibilitychange", ()=>{ if (!document.hidden) silentRefresh(); });
+
+/* ---------- start ---------- */
+if (loadSession()) enterApp();
+updateSaveStatus();
+</script>
+</body>
+</html>
