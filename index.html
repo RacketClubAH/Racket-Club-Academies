@@ -355,6 +355,40 @@
   .coach-attend.paid{background:var(--paid);border-color:var(--paid);color:#fff}
   .coach-empty{text-align:center;padding:28px 12px;color:var(--ink-soft);font-size:13px}
 
+  /* ── SEPARATE MASTERS CAMP ATTENDANCE TAB ───────── */
+  .masters-camp-panel{display:block;background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow)}
+  .masters-camp-panel.hidden{display:none !important}
+  .mc-panel-title{font-family:var(--display);font-size:25px;font-weight:500;color:var(--mple);margin:0 0 4px}
+  .mc-panel-sub{font-size:12px;color:var(--ink-soft);margin:0 0 16px}
+  .mc-controls{display:grid;grid-template-columns:minmax(180px,1.2fr) minmax(160px,1fr) auto;gap:10px;align-items:end;margin-bottom:14px}
+  .mc-field label{display:block;font-size:11px;letter-spacing:.04em;color:var(--ink-soft);margin:0 0 6px}
+  .mc-field select{width:100%;min-height:42px;padding:9px 11px;font:13px var(--ui);color:var(--ink);background:var(--foam);border:1px solid var(--pearl);border-radius:9px}
+  .mc-progress{display:flex;align-items:center;gap:10px;margin:12px 0}
+  .mc-progress-bar{height:7px;background:var(--line);border-radius:99px;overflow:hidden;flex:1}
+  .mc-progress-bar span{display:block;height:100%;width:0;background:var(--paid);border-radius:99px}
+  .mc-progress-text{font-size:12px;color:var(--ink-soft);white-space:nowrap}
+  .mc-save{width:100%;height:46px;margin:0 0 12px;border:0;border-radius:11px;background:var(--mple);color:#fff;font:500 14px var(--ui)}
+  .mc-save:disabled{opacity:.4;cursor:default}
+  .mc-search{width:100%;height:44px;border:1px solid var(--pearl);border-radius:10px;background:#fff;padding:0 13px;font:14px var(--ui);color:var(--ink);margin:0 0 12px}
+  .mc-roster{display:flex;flex-direction:column;gap:8px}
+  .mc-player{display:flex;align-items:center;gap:10px;padding:10px;background:#fff;border:1px solid var(--line);border-radius:12px}
+  .mc-player .avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--mple-soft);color:var(--mple);font-size:13px;font-weight:600;flex:0 0 auto}
+  .mc-player .player-info{min-width:0;flex:1}
+  .mc-player .player-name{font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis}
+  .mc-player .player-meta{font-size:11px;color:var(--ink-soft);margin-top:2px}
+  .mc-attend{min-width:100px;height:44px;border-radius:11px;border:1px solid var(--mple-line);background:#fff;color:var(--mple);font:500 13px var(--ui);flex:0 0 auto}
+  .mc-attend.present{background:var(--mple);border-color:var(--mple);color:#fff}
+  .mc-no-camp{padding:32px 14px;text-align:center;color:var(--ink-soft);font-size:13px;border:1px dashed var(--pearl);border-radius:12px}
+  .mc-dirty-note{font-size:12px;color:var(--danger);min-height:18px;margin:3px 0 10px}
+  @media(max-width:700px){
+    .masters-camp-panel{padding:13px;border-radius:12px}
+    .mc-controls{grid-template-columns:1fr 1fr}
+    .mc-controls .mc-refresh-wrap{grid-column:1 / -1}
+    .mc-controls .mc-refresh-wrap button{width:100%;justify-content:center}
+    .mc-player{padding:9px;gap:8px}
+    .mc-attend{min-width:88px}
+  }
+
   @media (max-width:700px){
     .sheet{padding:14px 12px 34px}
     .topbar{padding:10px 12px}
@@ -481,6 +515,22 @@
       <div class="coach-list" id="coachList"></div>
     </section>
 
+    <!-- Separate Masters Camp register. It uses the dedicated Masters Camp spreadsheet/backend. -->
+    <section id="mastersCampPanel" class="masters-camp-panel hidden" aria-label="Masters Camp attendance">
+      <h3 class="mc-panel-title">Masters Camp attendance</h3>
+      <p class="mc-panel-sub">Only children registered for the selected Masters Camp are shown. Attendance is saved separately from the regular academies.</p>
+      <div class="mc-controls">
+        <div class="mc-field"><label for="mastersCampSelect">Camp event</label><select id="mastersCampSelect"><option value="">Loading camps…</option></select></div>
+        <div class="mc-field"><label for="mastersCampDate">Session date</label><select id="mastersCampDate"><option value="">Select a camp first</option></select></div>
+        <div class="mc-refresh-wrap"><button type="button" class="ghost-btn" id="mastersCampRefresh">Refresh roster</button></div>
+      </div>
+      <div class="mc-progress"><div class="mc-progress-bar"><span id="mastersCampProgressBar"></span></div><span class="mc-progress-text" id="mastersCampProgressText">0 / 0 present</span></div>
+      <button type="button" class="mc-save" id="mastersCampSave" disabled>Attendance saved</button>
+      <div class="mc-dirty-note" id="mastersCampDirtyNote" aria-live="polite"></div>
+      <input id="mastersCampSearch" class="mc-search" type="search" placeholder="Find a camp player…" autocomplete="off">
+      <div class="mc-roster" id="mastersCampRoster"><div class="mc-no-camp">Connect to the Masters Camp register to load players.</div></div>
+    </section>
+
     <div class="grid-wrap desktop-register" id="gridWrap" style="position:relative">
       <div class="veil" id="gridVeil"><div class="spin"></div></div>
       <table class="grid" id="grid"></table>
@@ -538,6 +588,17 @@
   </div>
 </section>
 
+<!-- Staff-only access to the separate Masters Camp register -->
+<section id="mastersCampAccessModal" class="settings-modal hidden" aria-hidden="true">
+  <div class="settings-backdrop" id="mastersCampAccessBackdrop"></div>
+  <div class="settings-card" role="dialog" aria-modal="true" aria-labelledby="mastersCampAccessTitle">
+    <div class="settings-head"><div><span class="eyebrow">Separate register</span><h3 id="mastersCampAccessTitle">Connect Masters Camp</h3><p>Enter the staff key configured in the dedicated Masters Camp spreadsheet. This does not change your academy login.</p></div><button type="button" class="settings-close" id="mastersCampAccessClose" aria-label="Close">×</button></div>
+    <div class="field"><label for="mastersCampAccessKey">Masters Camp staff access key</label><input id="mastersCampAccessKey" type="password" autocomplete="current-password" placeholder="Enter staff access key"></div>
+    <div class="login-error" id="mastersCampAccessError" role="alert"></div>
+    <div class="settings-actions"><button type="button" class="ghost-btn" id="mastersCampAccessCancel">Cancel</button><button type="button" class="btn-primary settings-save" id="mastersCampAccessConnect">Verify &amp; open</button></div>
+  </div>
+</section>
+
 <div id="toast"></div>
 
 <script>
@@ -546,6 +607,10 @@
    It must end in /exec  (see SETUP_GUIDE.md, step 4).
    ════════════════════════════════════════════════════════════ */
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby42YyaXwPmrD6VDaKzMZlvNj0sy8qaRDjpSJuofWmq_NmzYCEpEWAId51G7Kq5b6mmzg/exec";
+
+/* Separate Masters Camp backend. Keep SCRIPT_URL above unchanged for all existing academies. */
+const MASTERS_CAMP_SCRIPT_URL = "PASTE_YOUR_DEDICATED_MASTERS_CAMP_WEB_APP_URL_HERE";
+const MASTERS_CAMP_FORM_TOKEN = "MC-FORM-2026";
 
 /* ---------- tiny helpers ---------- */
 const $ = (id) => document.getElementById(id);
@@ -568,6 +633,16 @@ let state = {
   saveInProgress: false
 };
 let refreshTimer = null;
+
+// Masters Camp state is deliberately separate from state.data/state.dirtyAttendance.
+let mastersCampMode = false;
+let mastersCampAccessKey = sessionStorage.getItem("ah_masters_camp_access_key") || "";
+let mastersCampData = null;
+let mastersCampVersion = null;
+let mastersCampSelectedId = "";
+let mastersCampSelectedDate = "";
+let mastersCampDraft = {}; // key: campId|registrationId|date -> desired present boolean
+
 
 function toast(msg, isErr){
   const t = $("toast");
@@ -633,6 +708,7 @@ async function doLogin(){
 
 /* ---------- app boot ---------- */
 function enterApp(){
+  mastersCampMode = false;
   $("loginView").classList.add("hidden");
   $("appView").classList.remove("hidden");
   $("coachPanel")?.classList.remove("hidden");
@@ -649,11 +725,18 @@ function enterApp(){
   state.academy = state.academies[0] || null;
 
   renderAcademySwitch();
+  applyAttendanceViewMode();
   loadAndRender();
   startAutoRefresh();
 }
 
 async function signOut(force = false){
+  if (!force && hasUnsavedMastersCampAttendance()){
+    const choice = confirm("You have unsaved Masters Camp attendance. Press OK to save it before signing out, or Cancel to stay signed in.");
+    if (!choice) return;
+    const saved = await saveMastersCampAttendance();
+    if (!saved) return;
+  }
   if (!force && hasUnsavedAttendance()){
     const choice = confirm("You have unsaved attendance changes. Press OK to save them before signing out, or Cancel to stay signed in.");
     if (!choice) return;
@@ -662,6 +745,9 @@ async function signOut(force = false){
   }
   if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
   clearSession();
+  sessionStorage.removeItem("ah_masters_camp_access_key");
+  mastersCampAccessKey = ""; mastersCampData = null; mastersCampVersion = null;
+  mastersCampSelectedId = ""; mastersCampSelectedDate = ""; mastersCampDraft = {}; mastersCampMode = false;
   state = { token:null, displayName:"", academies:[], academy:null, month:null, data:null, saving:0, lastSync:null, isAdmin:false, dirtyAttendance:{} };
   $("appView").classList.add("hidden");
   $("loginView").classList.remove("hidden");
@@ -670,29 +756,64 @@ async function signOut(force = false){
   $("settingsModal")?.classList.add("hidden");
   $("mobileAddModal")?.classList.add("hidden");
   $("settingsModal")?.setAttribute("aria-hidden","true");
+  $("mastersCampAccessModal")?.classList.add("hidden");
+  $("mastersCampAccessModal")?.setAttribute("aria-hidden","true");
   $("settingsBtn")?.classList.add("hidden");
 }
 
 /* ---------- academy switcher ---------- */
+function canSeeMastersCamp(){
+  return !!state.isAdmin || (state.academies || []).some(a => /football|soccer/i.test(String((a && a.key) || "") + " " + String((a && a.name) || "")));
+}
+
 function renderAcademySwitch(){
   const wrap = $("acadSwitch");
-  if (state.academies.length <= 1){ wrap.innerHTML = ""; return; }
+  const showCamp = canSeeMastersCamp();
+  if ((state.academies || []).length <= 1 && !showCamp){ wrap.innerHTML = ""; return; }
   wrap.innerHTML = "";
-  state.academies.forEach(a=>{
+  (state.academies || []).forEach(a=>{
     const b = document.createElement("button");
     b.className = "acad-chip";
     b.textContent = a.name;
-    b.setAttribute("aria-pressed", a.key === state.academy.key ? "true" : "false");
+    b.setAttribute("aria-pressed", (!mastersCampMode && state.academy && a.key === state.academy.key) ? "true" : "false");
     b.onclick = async ()=>{
-      if (state.academy.key === a.key) return;
+      if (!mastersCampMode && state.academy && state.academy.key === a.key) return;
+      if (!(await protectUnsavedMastersCampAttendance())) return;
       if (!(await protectUnsavedAttendance())) return;
+      mastersCampMode = false;
       state.academy = a;
       renderAcademySwitch();
+      applyAttendanceViewMode();
       loadAndRender();
     };
     wrap.appendChild(b);
   });
+  if (showCamp){
+    const campButton = document.createElement("button");
+    campButton.className = "acad-chip";
+    campButton.textContent = "Masters Camp";
+    campButton.setAttribute("aria-pressed", mastersCampMode ? "true" : "false");
+    campButton.onclick = openMastersCampTab;
+    wrap.appendChild(campButton);
+  }
 }
+
+function applyAttendanceViewMode(){
+  const isCamp = !!mastersCampMode;
+  $("mastersCampPanel")?.classList.toggle("hidden", !isCamp);
+  $("coachPanel")?.classList.toggle("hidden", isCamp);
+  $("gridWrap")?.classList.toggle("hidden", isCamp);
+  document.querySelector(".controls")?.classList.toggle("hidden", isCamp);
+  document.querySelector(".legend")?.classList.toggle("hidden", isCamp);
+  if (isCamp){
+    $("acadTitle").textContent = "Masters Camp";
+    $("acadInfo").textContent = "Separate event roster · attendance saved to the Masters Camp register";
+  } else if (state.academy){
+    $("acadTitle").textContent = state.academy.name;
+    $("acadInfo").textContent = state.academy.info ? "Runs " + state.academy.info : "";
+  }
+}
+
 
 /* ---------- month nav ---------- */
 async function shiftMonth(delta){
@@ -797,6 +918,7 @@ function updateSynced(){
 
 /* ---------- live refresh: keep the board current for everyone ---------- */
 function silentRefresh(){
+  if (mastersCampMode) return; // Camp data refresh is explicit, never background-polled.
   if (document.hidden) return;          // don't poll a backgrounded tab
   if (state.saving > 0 || state.saveInProgress) return;
   if (!state.token || !state.academy) return;
@@ -1452,6 +1574,262 @@ function toggleManage(){
   $("manageBtn").textContent = on ? "Done" : "Manage roster";
 }
 
+/* ---------- separate Masters Camp attendance ---------- */
+function mastersCampApiConfigured(){
+  return MASTERS_CAMP_SCRIPT_URL && MASTERS_CAMP_SCRIPT_URL.indexOf("PASTE_YOUR_") !== 0;
+}
+async function mastersCampApi(action, extra = {}, accessKey = mastersCampAccessKey){
+  if (!mastersCampApiConfigured()) throw new Error("Masters Camp is not connected yet. Paste the dedicated Masters Camp Apps Script /exec URL into MASTERS_CAMP_SCRIPT_URL near the top of this file.");
+  const res = await fetch(MASTERS_CAMP_SCRIPT_URL, {
+    method:"POST",
+    headers:{"Content-Type":"text/plain;charset=utf-8"},
+    body:JSON.stringify({token:MASTERS_CAMP_FORM_TOKEN, action, accessKey, ...extra})
+  });
+  const result = await res.json();
+  if (!result || !result.ok) throw new Error((result && result.error) || "Masters Camp request failed.");
+  return result;
+}
+function openMastersCampAccessModal(){
+  $("mastersCampAccessError").textContent = "";
+  $("mastersCampAccessKey").value = "";
+  $("mastersCampAccessModal").classList.remove("hidden");
+  $("mastersCampAccessModal").setAttribute("aria-hidden","false");
+  setTimeout(()=>$("mastersCampAccessKey").focus(),50);
+}
+function closeMastersCampAccessModal(){
+  $("mastersCampAccessModal").classList.add("hidden");
+  $("mastersCampAccessModal").setAttribute("aria-hidden","true");
+}
+async function openMastersCampTab(){
+  if (mastersCampMode) return;
+  if (!(await protectUnsavedAttendance())) return;
+  if (!(await protectUnsavedMastersCampAttendance())) return;
+  mastersCampMode = true;
+  renderAcademySwitch();
+  applyAttendanceViewMode();
+  if (!mastersCampApiConfigured()){
+    renderMastersCampUnavailable("Masters Camp backend URL is not configured yet. The regular academy registers are unchanged.");
+    toast("Add the dedicated Masters Camp backend URL", true);
+    return;
+  }
+  if (!mastersCampAccessKey){ openMastersCampAccessModal(); return; }
+  await loadMastersCampAttendance();
+}
+function renderMastersCampUnavailable(message){
+  $("mastersCampRoster").innerHTML = `<div class="mc-no-camp">${escapeHtml(message)}</div>`;
+  $("mastersCampSelect").innerHTML = '<option value="">Unavailable</option>';
+  $("mastersCampDate").innerHTML = '<option value="">—</option>';
+  $("mastersCampProgressText").textContent = "0 / 0 present";
+  $("mastersCampProgressBar").style.width = "0%";
+  updateMastersCampSaveButton();
+}
+async function connectMastersCamp(){
+  const btn = $("mastersCampAccessConnect");
+  const key = $("mastersCampAccessKey").value.trim();
+  $("mastersCampAccessError").textContent = "";
+  if (!key){ $("mastersCampAccessError").textContent = "Enter the staff access key."; return; }
+  btn.disabled = true; btn.textContent = "Verifying…";
+  try{
+    await mastersCampApi("checkCampAccess", {}, key);
+    mastersCampAccessKey = key;
+    sessionStorage.setItem("ah_masters_camp_access_key", key);
+    closeMastersCampAccessModal();
+    await loadMastersCampAttendance();
+  }catch(err){
+    $("mastersCampAccessError").textContent = err.message || "Couldn't connect to Masters Camp.";
+  }finally{
+    btn.disabled = false; btn.textContent = "Verify & open";
+  }
+}
+async function loadMastersCampAttendance(){
+  const roster = $("mastersCampRoster");
+  roster.innerHTML = '<div class="mc-no-camp">Loading Masters Camp players…</div>';
+  $("mastersCampRefresh").disabled = true;
+  try{
+    const result = await mastersCampApi("getCoachAttendance");
+    mastersCampData = {
+      camps: Array.isArray(result.camps) ? result.camps : [],
+      registrations: Array.isArray(result.registrations) ? result.registrations : [],
+      attendance: Array.isArray(result.attendance) ? result.attendance : []
+    };
+    mastersCampVersion = Number(result.version);
+    mastersCampDraft = {};
+    const validCamps = mastersCampData.camps;
+    if (!validCamps.some(c => c.id === mastersCampSelectedId)) mastersCampSelectedId = (validCamps[0] && validCamps[0].id) || "";
+    chooseMastersCampDate();
+    renderMastersCampPanel();
+  }catch(err){
+    console.error(err);
+    const msg = err.message || "Couldn't load Masters Camp.";
+    if (/access key|staff access|access is not configured/i.test(msg)){
+      mastersCampAccessKey = "";
+      sessionStorage.removeItem("ah_masters_camp_access_key");
+      openMastersCampAccessModal();
+      $("mastersCampAccessError").textContent = msg;
+    }else{
+      renderMastersCampUnavailable(msg);
+      toast("Couldn't load Masters Camp", true);
+    }
+  }finally{
+    $("mastersCampRefresh").disabled = false;
+  }
+}
+function chooseMastersCampDate(){
+  const camp = (mastersCampData?.camps || []).find(c => c.id === mastersCampSelectedId);
+  const dates = (camp?.sessionDates || []).slice().sort();
+  if (!dates.includes(mastersCampSelectedDate)){
+    const today = todayKey();
+    mastersCampSelectedDate = dates.includes(today) ? today : (dates.find(d => d >= today) || dates[dates.length-1] || "");
+  }
+}
+function campAttendanceKey(campId, registrationId, date){ return campId + "|" + registrationId + "|" + date; }
+function campBasePresent(campId, registrationId, date){
+  return !!(mastersCampData?.attendance || []).some(a => a.campId === campId && a.registrationId === registrationId && a.date === date && a.present);
+}
+function campCurrentPresent(campId, registrationId, date){
+  const key = campAttendanceKey(campId, registrationId, date);
+  return Object.prototype.hasOwnProperty.call(mastersCampDraft,key) ? !!mastersCampDraft[key] : campBasePresent(campId,registrationId,date);
+}
+function hasUnsavedMastersCampAttendance(){
+  if (!mastersCampData) return false;
+  return Object.keys(mastersCampDraft).some(key=>{
+    const p=key.split("|");
+    return p.length===3 && !!mastersCampDraft[key] !== campBasePresent(p[0],p[1],p[2]);
+  });
+}
+function dirtyMastersCampEntries(){
+  if (!mastersCampData) return [];
+  return Object.keys(mastersCampDraft).filter(key=>{
+    const p=key.split("|");
+    return p.length===3 && !!mastersCampDraft[key] !== campBasePresent(p[0],p[1],p[2]);
+  }).map(key=>{
+    const p=key.split("|");
+    return {key,campId:p[0],registrationId:p[1],date:p[2],present:!!mastersCampDraft[key]};
+  });
+}
+async function protectUnsavedMastersCampAttendance(){
+  if (!hasUnsavedMastersCampAttendance()) return true;
+  const yes = confirm("You have unsaved Masters Camp attendance changes. Press OK to save before continuing, or Cancel to stay on this register.");
+  if (!yes) return false;
+  return await saveMastersCampAttendance();
+}
+function updateMastersCampSaveButton(){
+  const count = dirtyMastersCampEntries().length;
+  const btn = $("mastersCampSave");
+  if (btn){
+    btn.disabled = count===0;
+    btn.textContent = count ? `Save attendance · ${count} change${count===1?"":"s"}` : "Attendance saved";
+  }
+  const note = $("mastersCampDirtyNote");
+  if (note) note.textContent = count ? `${count} unsaved attendance change${count===1?"":"s"}` : "";
+}
+function renderMastersCampPanel(){
+  const camps = (mastersCampData?.camps || []).filter(c => !c.isArchived);
+  const select = $("mastersCampSelect");
+  select.innerHTML = camps.length ? camps.map(c=>`<option value="${escapeAttr(c.id)}" ${c.id===mastersCampSelectedId?"selected":""}>${escapeHtml(c.name)}</option>`).join("") : '<option value="">No active camps</option>';
+  select.disabled = !camps.length;
+  if (!camps.some(c=>c.id===mastersCampSelectedId)) mastersCampSelectedId = camps[0]?.id || "";
+  chooseMastersCampDate();
+  const camp = camps.find(c=>c.id===mastersCampSelectedId);
+  const dateSelect = $("mastersCampDate");
+  const dates = camp?.sessionDates || [];
+  dateSelect.innerHTML = dates.length ? dates.map(d=>`<option value="${d}" ${d===mastersCampSelectedDate?"selected":""}>${formatCampDate(d)}</option>`).join("") : '<option value="">No session dates set</option>';
+  dateSelect.disabled = !dates.length;
+  renderMastersCampRoster();
+}
+function formatCampDate(iso){
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(iso||""))) return String(iso||"Date not set");
+  const p=iso.split("-").map(Number);
+  return new Intl.DateTimeFormat("en-GB",{weekday:"short",day:"numeric",month:"short",year:"numeric"}).format(new Date(p[0],p[1]-1,p[2]));
+}
+function renderMastersCampRoster(){
+  const roster = $("mastersCampRoster");
+  if (!mastersCampData){ renderMastersCampUnavailable("Connect to the dedicated Masters Camp register to load players."); return; }
+  const camp = (mastersCampData.camps || []).find(c=>c.id===mastersCampSelectedId && !c.isArchived);
+  if (!camp){
+    roster.innerHTML = '<div class="mc-no-camp">No active camp events are available yet. Reception must create a camp and its session dates in the Masters Camp admin app.</div>';
+    $("mastersCampProgressText").textContent = "0 / 0 present";
+    $("mastersCampProgressBar").style.width = "0%";
+    updateMastersCampSaveButton();
+    return;
+  }
+  if (!mastersCampSelectedDate){
+    roster.innerHTML = '<div class="mc-no-camp">This camp has no session dates. Add the dates in the Masters Camp admin app, save them, and refresh this list.</div>';
+    $("mastersCampProgressText").textContent = "0 / 0 present";
+    $("mastersCampProgressBar").style.width = "0%";
+    updateMastersCampSaveButton();
+    return;
+  }
+  const allPlayers = (mastersCampData.registrations || []).filter(r=>r.campId===camp.id);
+  const presentCount = allPlayers.filter(r=>campCurrentPresent(camp.id,r.id,mastersCampSelectedDate)).length;
+  $("mastersCampProgressText").textContent = `${presentCount} / ${allPlayers.length} present`;
+  $("mastersCampProgressBar").style.width = (allPlayers.length ? Math.round(presentCount/allPlayers.length*100) : 0) + "%";
+  const search = ($("mastersCampSearch")?.value || "").trim().toLocaleLowerCase();
+  const players = allPlayers.filter(r=>String(r.childName||"").toLocaleLowerCase().includes(search)).sort((a,b)=>String(a.childName||"").localeCompare(String(b.childName||"")));
+  if (!allPlayers.length){ roster.innerHTML = '<div class="mc-no-camp">No children are registered for this event yet. Parents must register through the separate Masters Camp registration form.</div>'; updateMastersCampSaveButton(); return; }
+  if (!players.length){ roster.innerHTML = '<div class="mc-no-camp">No camp players match your search.</div>'; updateMastersCampSaveButton(); return; }
+  roster.innerHTML = players.map(r=>{
+    const name=String(r.childName||"Unnamed player");
+    const initials=name.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w.charAt(0)).join("").toUpperCase()||"?";
+    const present=campCurrentPresent(camp.id,r.id,mastersCampSelectedDate);
+    const attended=new Set((mastersCampData.attendance||[]).filter(a=>a.campId===camp.id&&a.registrationId===r.id&&a.present).map(a=>a.date));
+    Object.keys(mastersCampDraft).forEach(key=>{
+      const p=key.split("|"); if(p.length===3&&p[0]===camp.id&&p[1]===r.id){ if(mastersCampDraft[key])attended.add(p[2]);else attended.delete(p[2]); }
+    });
+    const used=attended.size, allowed=Number(r.packageDays)||5, remaining=Math.max(0,allowed-used);
+    const packageLabel=`${allowed}-session package · ${used}/${allowed} used${remaining?` · ${remaining} left`:used>=allowed?` · package used`:""}`;
+    return `<div class="mc-player"><div class="avatar">${escapeHtml(initials)}</div><div class="player-info"><div class="player-name">${escapeHtml(name)}</div><div class="player-meta">${escapeHtml(packageLabel)}</div></div><button type="button" class="mc-attend ${present?"present":""}" data-mc-registration="${escapeAttr(r.id)}" aria-pressed="${present?"true":"false"}">${present?"Present ✓":"Mark present"}</button></div>`;
+  }).join("");
+  roster.querySelectorAll("[data-mc-registration]").forEach(btn=>{
+    btn.onclick=()=>{
+      const key=campAttendanceKey(camp.id,btn.dataset.mcRegistration,mastersCampSelectedDate);
+      const next=!campCurrentPresent(camp.id,btn.dataset.mcRegistration,mastersCampSelectedDate);
+      if(next===campBasePresent(camp.id,btn.dataset.mcRegistration,mastersCampSelectedDate)) delete mastersCampDraft[key];
+      else mastersCampDraft[key]=next;
+      renderMastersCampRoster();
+    };
+  });
+  updateMastersCampSaveButton();
+}
+async function saveMastersCampAttendance(){
+  const changes = dirtyMastersCampEntries();
+  if (!changes.length){ updateMastersCampSaveButton(); return true; }
+  const btn=$("mastersCampSave");
+  btn.disabled=true; btn.textContent="Saving attendance…";
+  try{
+    const result=await mastersCampApi("saveCoachAttendance",{
+      expectedVersion:mastersCampVersion,
+      changes:changes.map(({campId,registrationId,date,present})=>({campId,registrationId,date,present}))
+    });
+    mastersCampVersion=Number(result.version);
+    changes.forEach(change=>{
+      mastersCampData.attendance=(mastersCampData.attendance||[]).filter(a=>!(a.campId===change.campId&&a.registrationId===change.registrationId&&a.date===change.date));
+      if(change.present) mastersCampData.attendance.push({campId:change.campId,registrationId:change.registrationId,date:change.date,present:true});
+      delete mastersCampDraft[change.key];
+    });
+    toast("Masters Camp attendance saved");
+    renderMastersCampRoster();
+    return true;
+  }catch(err){
+    console.error(err);
+    toast(err.message || "Couldn't save Masters Camp attendance",true);
+    if(/changed since|records changed|refresh/i.test(err.message||"")){
+      $("mastersCampDirtyNote").textContent="The camp register changed in the background. Refresh the roster, then re-mark any changes before saving.";
+    }
+    return false;
+  }finally{
+    updateMastersCampSaveButton();
+  }
+}
+async function refreshMastersCamp(){
+  if (hasUnsavedMastersCampAttendance()){
+    const discard = confirm("Refreshing will discard unsaved Masters Camp attendance changes. Continue and reload the latest roster?");
+    if (!discard) return;
+    mastersCampDraft = {};
+  }
+  await loadMastersCampAttendance();
+}
+
 /* ---------- misc ---------- */
 function escapeHtml(s){ return String(s).replace(/[&<>]/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c])); }
 function escapeAttr(s){ return String(s).replace(/"/g,"&quot;"); }
@@ -1496,6 +1874,24 @@ $("saveChangesBtn").onclick = saveAttendanceChanges;
   $("mobileAddSave").onclick = saveMobileAddChild;
   $("mobileAddSurname").addEventListener("keydown", e=>{ if(e.key==="Enter") saveMobileAddChild(); });
   $("mobileAddGroup").addEventListener("keydown", e=>{ if(e.key==="Enter") saveMobileAddChild(); });
+  $("mastersCampAccessConnect").onclick = connectMastersCamp;
+  $("mastersCampAccessCancel").onclick = ()=>{ closeMastersCampAccessModal(); mastersCampMode=false; renderAcademySwitch(); applyAttendanceViewMode(); if(state.academy) loadAndRender(); };
+  $("mastersCampAccessClose").onclick = ()=>{ closeMastersCampAccessModal(); mastersCampMode=false; renderAcademySwitch(); applyAttendanceViewMode(); if(state.academy) loadAndRender(); };
+  $("mastersCampAccessBackdrop").onclick = ()=>{ closeMastersCampAccessModal(); mastersCampMode=false; renderAcademySwitch(); applyAttendanceViewMode(); if(state.academy) loadAndRender(); };
+  $("mastersCampAccessKey").addEventListener("keydown",e=>{if(e.key==="Enter")connectMastersCamp();});
+  $("mastersCampSelect").onchange = async e=>{
+    const desired=e.target.value;
+    if(!(await protectUnsavedMastersCampAttendance())){e.target.value=mastersCampSelectedId;return;}
+    mastersCampSelectedId=desired; mastersCampSelectedDate=""; chooseMastersCampDate(); renderMastersCampPanel();
+  };
+  $("mastersCampDate").onchange = async e=>{
+    const desired=e.target.value;
+    if(!(await protectUnsavedMastersCampAttendance())){e.target.value=mastersCampSelectedDate;return;}
+    mastersCampSelectedDate=desired; renderMastersCampPanel();
+  };
+  $("mastersCampRefresh").onclick = refreshMastersCamp;
+  $("mastersCampSave").onclick = saveMastersCampAttendance;
+  $("mastersCampSearch").addEventListener("input",renderMastersCampRoster);
 // when the coach switches back to this tab, pull the latest immediately
 document.addEventListener("visibilitychange", ()=>{ if (!document.hidden) silentRefresh(); });
 
